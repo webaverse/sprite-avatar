@@ -27,7 +27,8 @@ export default () => {
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
-  // canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px;`;
+  canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px;`;
+  // document.body.appendChild(canvas);
   
   let spriteAvatarMesh = null;
   (async () => {
@@ -37,8 +38,8 @@ export default () => {
     
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/scillia.vrm`;
     const m = await metaversefile.import(vrmUrl);
-    const app = metaversefile.createApp();
-    await app.addModule(m);
+    const app2 = metaversefile.createApp();
+    await app2.addModule(m);
     
     const renderer = new THREE.WebGLRenderer({
       preserveDrawingBuffer: true,
@@ -62,7 +63,7 @@ export default () => {
     scene2.add(directionalLight);
     
     let waitPromise = null;
-    app.dispatchEvent({
+    app2.dispatchEvent({
       type: 'wearupdate',
       wear: {},
       waitUntil(p) {
@@ -71,7 +72,7 @@ export default () => {
     });
     await waitPromise;
     
-    const {skinnedVrm} = app;
+    const {skinnedVrm} = app2;
     // console.log('got app', skinnedVrm);
     const localRig = createAvatar(skinnedVrm, {
       fingers: true,
@@ -79,9 +80,6 @@ export default () => {
       visemes: true,
       debug: false,
     });
-    // localRig.model = o;
-    // localRig.app = app;
-    // unFrustumCull(app);
     
     localRig.emotes.push({
       index: 2,
@@ -95,7 +93,7 @@ export default () => {
       }
     });
     
-    scene2.add(app);
+    scene2.add(app2);
     renderer.render(scene2, camera2);
     
     await _timeout(2000);
@@ -294,7 +292,7 @@ export default () => {
             uTex,
             vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
               vec2(x, -y)/${numSlots.toFixed(8)} +
-              vUv/${numSlots.toFixed(8)}
+              vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
           );
           if (gl_FragColor.a < 0.5) {
             discard;
@@ -333,7 +331,7 @@ export default () => {
       spriteAvatarMesh.material.uniforms.uTime.value = (Date.now() % 1000) / 1000;
       spriteAvatarMesh.material.uniforms.uTime.needsUpdate = true;
       
-      spriteAvatarMesh.material.uniforms.uY.value = mod(Math.PI - euler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+      spriteAvatarMesh.material.uniforms.uY.value = mod(Math.PI + euler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
       // console.log('value', spriteAvatarMesh.material.uniforms.uY.value);
       spriteAvatarMesh.material.uniforms.uY.needsUpdate = true;
     }
