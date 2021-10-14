@@ -14,6 +14,10 @@ const distance = 2;
 const speed = 0.2;
 const numSlots = size / texSize;
 
+const localVector = new THREE.Vector3();
+const localEuler = new THREE.Euler();
+const localMatrix = new THREE.Matrix4();
+
 function mod(a, n) {
   return ((a % n) + n) % n;
 }
@@ -314,24 +318,24 @@ export default () => {
   const {camera} = useInternals();
   useFrame(e => {
     if (spriteAvatarMesh) {
-      const euler = new THREE.Euler()
+      localEuler
         .setFromRotationMatrix(
-          new THREE.Matrix4().lookAt(
+          localMatrix.lookAt(
             spriteAvatarMesh.position,
             camera.position,
-            new THREE.Vector3(0, 1, 0)
+            localVector.set(0, 1, 0)
           ),
           'YXZ'
         );
-      euler.x = 0;
-      euler.z = 0;
-      spriteAvatarMesh.quaternion.setFromEuler(euler);
+      localEuler.x = 0;
+      localEuler.z = 0;
+      spriteAvatarMesh.quaternion.setFromEuler(localEuler);
       spriteAvatarMesh.updateMatrixWorld();
       
       spriteAvatarMesh.material.uniforms.uTime.value = (Date.now() % 1000) / 1000;
       spriteAvatarMesh.material.uniforms.uTime.needsUpdate = true;
       
-      spriteAvatarMesh.material.uniforms.uY.value = mod(Math.PI + euler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+      spriteAvatarMesh.material.uniforms.uY.value = mod(Math.PI + localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
       // console.log('value', spriteAvatarMesh.material.uniforms.uY.value);
       spriteAvatarMesh.material.uniforms.uY.needsUpdate = true;
     }
