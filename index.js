@@ -15,6 +15,8 @@ const speed = 0.2;
 const numSlots = size / texSize;
 
 const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
 
@@ -37,8 +39,8 @@ export default () => {
   let spriteAvatarMesh = null;
   (async () => {
     const animations = useAvatarAnimations();
-    const walkAnimation = animations.find(a => a.name === 'walking.fbx');
-    const runAnimation = animations.find(a => a.name === 'running.fbx');
+    // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
+    const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
     
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/scillia.vrm`;
     const m = await metaversefile.import(vrmUrl);
@@ -318,15 +320,16 @@ export default () => {
   const {camera} = useInternals();
   useFrame(e => {
     if (spriteAvatarMesh) {
-      localEuler
+      localQuaternion
         .setFromRotationMatrix(
           localMatrix.lookAt(
-            spriteAvatarMesh.position,
+            spriteAvatarMesh.getWorldPosition(localVector),
             camera.position,
-            localVector.set(0, 1, 0)
-          ),
-          'YXZ'
-        );
+            localVector2.set(0, 1, 0)
+          )
+        )
+        .premultiply(app.quaternion.clone().invert());
+      localEuler.setFromQuaternion(localQuaternion, 'YXZ');
       localEuler.x = 0;
       localEuler.z = 0;
       spriteAvatarMesh.quaternion.setFromEuler(localEuler);
