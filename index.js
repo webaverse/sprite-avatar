@@ -33,6 +33,7 @@ export default () => {
   const animations = useAvatarAnimations();
   // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
   const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
+  const runAnimationDuration = runAnimation.duration * 1.5;
   
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -115,7 +116,7 @@ export default () => {
     const timeDiff = runAnimation.duration * 1000 / numTimes;
     for (let angle = 0; angle < Math.PI*2; angle += Math.PI*2/numAngles) {
       let positionOffset = 0;
-      const animationDurationTime = runAnimation.duration * 1000;
+      // const animationDurationTime = runAnimation.duration * 1000;
       const _render = now => {
         const timeDiffMs = timeDiff/1000;
         positionOffset -= speed * timeDiffMs;
@@ -336,7 +337,7 @@ export default () => {
       spriteAvatarMesh.quaternion.setFromEuler(localEuler);
       spriteAvatarMesh.updateMatrixWorld();
       
-      spriteAvatarMesh.material.uniforms.uTime.value = (Date.now()/1000 % runAnimation.duration) / runAnimation.duration;
+      spriteAvatarMesh.material.uniforms.uTime.value = (Date.now()/1000 % runAnimationDuration) / runAnimationDuration;
       spriteAvatarMesh.material.uniforms.uTime.needsUpdate = true;
       
       spriteAvatarMesh.material.uniforms.uY.value = mod(Math.PI + localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
