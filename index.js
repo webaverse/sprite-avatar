@@ -120,10 +120,10 @@ export default () => {
         const timeDiffMs = timeDiff/1000;
         positionOffset -= speed * timeDiffMs;
         const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-        camera2.position.set(0, -localRig.height/2, positionOffset)
+        camera2.position.set(0, 0, positionOffset)
           .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
         // camera2.quaternion.setFromEuler(euler);
-        camera2.lookAt(new THREE.Vector3(0, camera2.position.y, positionOffset));
+        camera2.lookAt(new THREE.Vector3(0, -localRig.height*0.5, positionOffset));
         
         localRig.inputs.hmd.position.set(0, 0, positionOffset);
         localRig.inputs.hmd.updateMatrixWorld();
