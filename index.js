@@ -30,6 +30,10 @@ const _timeout = (t = 1000) => new Promise((accept, reject) => {
 export default () => {
   const app = useApp();
   
+  const animations = useAvatarAnimations();
+  // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
+  const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
+  
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -38,9 +42,6 @@ export default () => {
   
   let spriteAvatarMesh = null;
   (async () => {
-    const animations = useAvatarAnimations();
-    // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
-    const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
     
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/scillia.vrm`;
     const m = await metaversefile.import(vrmUrl);
@@ -335,7 +336,7 @@ export default () => {
       spriteAvatarMesh.quaternion.setFromEuler(localEuler);
       spriteAvatarMesh.updateMatrixWorld();
       
-      spriteAvatarMesh.material.uniforms.uTime.value = (Date.now() % 1000) / 1000;
+      spriteAvatarMesh.material.uniforms.uTime.value = (Date.now()/1000 % runAnimation.duration) / runAnimation.duration;
       spriteAvatarMesh.material.uniforms.uTime.needsUpdate = true;
       
       spriteAvatarMesh.material.uniforms.uY.value = mod(Math.PI + localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
