@@ -58,7 +58,7 @@ export default () => {
     // renderer.autoClear = false;
     renderer.sortObjects = false;
     renderer.physicallyCorrectLights = true;
-    renderer.outputEncoding = THREE.sRGBEncoding;
+    // renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.gammaFactor = 2.2;
 
     const camera2 = new THREE.PerspectiveCamera();
