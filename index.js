@@ -70,15 +70,7 @@ export default () => {
     directionalLight.position.set(1, 2, 3);
     scene2.add(directionalLight);
     
-    let waitPromise = null;
-    app2.dispatchEvent({
-      type: 'wearupdate',
-      wear: {},
-      waitUntil(p) {
-        waitPromise = p;
-      },
-    });
-    await waitPromise;
+    await app2.setSkinning(true);
     
     const {skinnedVrm} = app2;
     // console.log('got app', skinnedVrm);
