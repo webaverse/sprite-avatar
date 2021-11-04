@@ -11,7 +11,7 @@ const numTimes = 7;
 const numAngles = 8;
 const worldSize = 2;
 const distance = 2;
-const speed = 0.2;
+const speed = 10;
 const numSlots = size / texSize;
 
 const localVector = new THREE.Vector3();
@@ -109,7 +109,7 @@ export default () => {
     for (let angle = 0; angle < Math.PI*2; angle += Math.PI*2/numAngles) {
       let positionOffset = 0;
       // const animationDurationTime = runAnimation.duration * 1000;
-      const _render = now => {
+      const _render = (now, render) => {
         const timeDiffMs = timeDiff/1000;
         positionOffset -= speed * timeDiffMs;
         const euler = new THREE.Euler(0, angle, 0, 'YXZ');
@@ -135,7 +135,7 @@ export default () => {
         localRig.setTopEnabled(false);
         localRig.setBottomEnabled(false);
         // localRig.direction.set(0, 0, -1);
-        localRig.velocity.set(0, 0, -1);
+        // localRig.velocity.set(0, 0, -1);
         /* localRig.jumpState = !!jumpAction;
         localRig.jumpTime = jumpTime;
         localRig.flyState = !!flyAction;
@@ -144,18 +144,20 @@ export default () => {
         // const useAnimation = (useAction?.animation) || '';
         // localRig.useAnimation = useAnimation;
 
-        localRig.update(/*1000 +*/ now, timeDiffMs);
+        localRig.update(/*1000 +*/ now, timeDiffMs, 100);
       
-        renderer.render(scene2, camera2);
+        if (render) {
+          renderer.render(scene2, camera2);
+        }
       };
       // pre-run the animation one cycle first, to stabilize the hair physics
       let now = 0;
       for (let j = 0; j < numTimes; j++) {
-        _render(now);
+        _render(now, false);
         now += timeDiff;
       }
       for (let j = 0; j < numTimes; j++) {
-        _render(now);
+        _render(now, true);
         now += timeDiff;
 
         const x = i % numSlots;
