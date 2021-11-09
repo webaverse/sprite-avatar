@@ -204,6 +204,7 @@ export default () => {
         },
       },
       vertexShader: `\
+        ${THREE.ShaderChunk.common}
         precision highp float;
         precision highp int;
 
@@ -225,12 +226,15 @@ export default () => {
         varying vec3 vPos;
         varying vec3 vNormal;
 
+        ${THREE.ShaderChunk.logdepthbuf_pars_vertex}
+
         void main() {
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
           gl_Position = projectionMatrix * mvPosition;
 
           // vViewPosition = -mvPosition.xyz;
           vUv = uv;
+          ${THREE.ShaderChunk.logdepthbuf_vertex}
         }
       `,
       fragmentShader: `\
@@ -260,6 +264,8 @@ export default () => {
         varying vec2 vWorldUv;
         varying vec3 vPos;
         varying vec3 vNormal;
+
+        ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
 
         float edgeFactor(vec2 uv) {
           float divisor = 0.5;
@@ -299,6 +305,8 @@ export default () => {
           if (gl_FragColor.a < 0.5) {
             discard;
           }
+
+          ${THREE.ShaderChunk.logdepthbuf_fragment}
         }
       `,
       transparent: true,
