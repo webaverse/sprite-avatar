@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 // import easing from './easing.js';
-import metaversefile from 'metaversefile';
-const {useApp, useFrame, usePhysics, createAvatar, useAvatarAnimations, useInternals, useCleanup} = metaversefile;
+import totum from 'totum';
+const {useApp, useFrame, usePhysics, createAvatar, useAvatarAnimations, useInternals, useCleanup} = totum;
 
 // const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
@@ -45,8 +45,8 @@ export default () => {
   (async () => {
     
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/scillia.vrm`;
-    const m = await metaversefile.import(vrmUrl);
-    const app2 = metaversefile.createApp();
+    const m = await totum.import(vrmUrl);
+    const app2 = totum.createApp();
     await app2.addModule(m);
     
     const renderer = new THREE.WebGLRenderer({
@@ -121,7 +121,7 @@ export default () => {
         localRig.inputs.hmd.position.set(0, 0, positionOffset);
         localRig.inputs.hmd.updateMatrixWorld();
         
-        /* const localPlayer = metaversefile.useLocalPlayer();
+        /* const localPlayer = totum.useLocalPlayer();
         const jumpAction = localPlayer.actions.find(action => action.type === 'jump');
         const jumpTime = jumpAction? jumpAction.time : -1;
         const flyAction = localPlayer.actions.find(action => action.type === 'fly');
