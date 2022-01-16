@@ -2,8 +2,34 @@ import * as THREE from 'three';
 // import easing from './easing.js';
 import metaversefile from 'metaversefile';
 const {useApp, useFrame, usePhysics, useMaterials, createAvatar, useAvatarAnimations, useInternals, useCleanup} = metaversefile;
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 // const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
+
+class DoubleSidedPlaneGeometry extends THREE.BufferGeometry {
+  constructor(width, height, widthSegments, heightSegments) {
+    super();
+
+    const g1 = new THREE.PlaneGeometry(width, height, widthSegments, heightSegments);
+    const g2 = new THREE.PlaneGeometry(width, height, widthSegments, heightSegments);
+    g2.rotateY(Math.PI);
+    // flip the uvs in the second geometry so that the texture is mirrored
+    for (let i = 0; i < g2.attributes.uv.array.length; i += 2) {
+      g2.attributes.uv.array[i] = 1 - g2.attributes.uv.array[i];
+    }
+    const g = BufferGeometryUtils.mergeBufferGeometries([g1, g2]);
+
+    // clone the attributes t o the local geometry
+    const attributes = g.attributes;
+    for (const key in attributes) {
+      if (attributes.hasOwnProperty(key)) {
+        this.setAttribute(key, attributes[key]);
+      }
+    }
+    // also clone the indices
+    this.setIndex(g.index);
+  }
+}
 
 const size = 4096 * 2;
 const texSize = 512;
@@ -27,7 +53,7 @@ const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
 
-const planeGeometry = new THREE.PlaneBufferGeometry(worldSize, worldSize);
+const planeGeometry = new DoubleSidedPlaneGeometry(worldSize, worldSize);
 
 function mod(a, n) {
   return ((a % n) + n) % n;
@@ -326,7 +352,7 @@ export default () => {
         // polygonOffset: true,
         // polygonOffsetFactor: -2,
         // polygonOffsetUnits: 1,
-        side: THREE.DoubleSide,
+        // side: THREE.DoubleSide,
       });
       const planeSpriteMesh = new THREE.Mesh(planeGeometry, planeSpriteMaterial);
       return planeSpriteMesh;
@@ -458,7 +484,7 @@ export default () => {
         // polygonOffset: true,
         // polygonOffsetFactor: -2,
         // polygonOffsetUnits: 1,
-        side: THREE.DoubleSide,
+        // side: THREE.DoubleSide,
       });
       const spriteAvatarMesh = new THREE.Mesh(planeGeometry, avatarSpriteMaterial);
       return spriteAvatarMesh;
