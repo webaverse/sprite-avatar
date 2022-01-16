@@ -51,6 +51,8 @@ const alphaTest = 0.9;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localVector2D = new THREE.Vector2();
+const localVector4D = new THREE.Vector4();
 const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
@@ -133,7 +135,7 @@ class CameraGeometry extends THREE.BufferGeometry {
 export default () => {
   const app = useApp();
   const {WebaverseShaderMaterial} = useMaterials();
-  const {scene, camera} = useInternals();
+  const {renderer, scene, camera} = useInternals();
   
   const animations = useAvatarAnimations();
   // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
@@ -161,23 +163,23 @@ export default () => {
   const spriteAvatarMeshes = [];
   // let tex;
   (async () => {
-    
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
     const m = await metaversefile.import(vrmUrl);
     const app2 = metaversefile.createApp();
     await app2.addModule(m);
     
-    const renderer = new THREE.WebGLRenderer({
+    /* const renderer = new THREE.WebGLRenderer({
       preserveDrawingBuffer: true,
       antialias: true,
       alpha: true,
     });
-    renderer.setSize(texSize, texSize);
-    // renderer.autoClear = false;
+    renderer.setSize(texSize, texSize); */
+    
+    /* // renderer.autoClear = false;
     renderer.sortObjects = false;
     renderer.physicallyCorrectLights = true;
     // renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.gammaFactor = 2.2;
+    renderer.gammaFactor = 2.2; */
 
     const camera2 = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
     const scene2 = new THREE.Scene();
@@ -231,7 +233,7 @@ export default () => {
     // camera.position.set(0, -localRig.height/2, -2);
     // camera.lookAt(new THREE.Vector3(0, camera.position.y, 0));
 
-    const _makeSpritePlaneMesh = (tex, {angleIndex}) => {
+    const _makeSpritePlaneMesh = (tex, tex2, {angleIndex}) => {
       const planeSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
@@ -357,6 +359,89 @@ export default () => {
         // side: THREE.DoubleSide,
       });
       const planeSpriteMesh = new THREE.Mesh(planeGeometry, planeSpriteMaterial);
+      planeSpriteMesh.customPostMaterial2 = new WebaverseShaderMaterial({
+        uniforms: {
+          uTex: {
+            type: 't',
+            value: tex2,
+            needsUpdate: true,
+          },
+          uTime: {
+            type: 'f',
+            value: 0,
+            needsUpdate: true,
+          },
+          uAngleIndex: {
+            type: 'f',
+            value: angleIndex,
+            needsUpdate: true,
+          },
+        },
+        vertexShader: `\
+          precision highp float;
+          precision highp int;
+
+          uniform vec4 uSelectRange;
+
+          // attribute vec3 barycentric;
+          attribute float ao;
+          attribute float skyLight;
+          attribute float torchLight;
+
+          // varying vec3 vViewPosition;
+          varying vec2 vUv;
+          varying vec3 vBarycentric;
+          varying float vAo;
+          varying float vSkyLight;
+          varying float vTorchLight;
+          varying vec3 vSelectColor;
+          varying vec2 vWorldUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
+
+          void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+
+            // vViewPosition = -mvPosition.xyz;
+            vUv = uv;
+          }
+        `,
+        fragmentShader: `\
+          precision highp float;
+          precision highp int;
+
+          #define PI 3.1415926535897932384626433832795
+
+          // uniform float sunIntensity;
+          uniform sampler2D uTex;
+          // uniform vec3 uColor;
+          uniform float uTime;
+          // uniform vec3 sunDirection;
+          // uniform float distanceOffset;
+          uniform float uAngleIndex;
+          float parallaxScale = 0.3;
+          float parallaxMinLayers = 50.;
+          float parallaxMaxLayers = 50.;
+
+          // varying vec3 vViewPosition;
+          varying vec2 vUv;
+          varying vec3 vBarycentric;
+          varying float vAo;
+          varying float vSkyLight;
+          varying float vTorchLight;
+          varying vec3 vSelectColor;
+          varying vec2 vWorldUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
+
+          void main() {
+            
+            gl_FragColor = vec4(vec3(1., 0., 0.), 1.);
+          }
+        `,
+        transparent: true,
+      });
       return planeSpriteMesh;
     };
     const _makeSpriteAvatarMesh = tex => {
@@ -626,12 +711,12 @@ export default () => {
         },
       },
     ];
-    const _captureCanvas = (canvas, options) => new Promise((accept, reject) => {
+    const _captureCanvas = (canvas, sx, sy, sw, sh, options) => new Promise((accept, reject) => {
       canvas.toBlob(blob => {
         const img = new Image();
         const u = URL.createObjectURL(blob);
         img.onload = async () => {
-          const imageBitmap = await createImageBitmap(img, options);
+          const imageBitmap = await createImageBitmap(img, sx, sy, sw, sh, options);
           accept(imageBitmap);
           URL.revokeObjectURL(u);
         };
@@ -640,13 +725,32 @@ export default () => {
         img.src = u;
       }, 'image/png');
     });
-    const _captureRender = () => _captureCanvas(renderer.domElement);
+    const pixelRatio = window.devicePixelRatio;
+    const _captureRender = () => _captureCanvas(canvas, 0, canvas.height - texSize, texSize, texSize);
     const _render = () => {
       const oldParent = app2.parent;
       scene2.add(app2);
 
-      renderer.render(scene2, camera2);
-      
+      const rendererSize = renderer.getSize(localVector2D);
+      if (rendererSize.x >= texSize && rendererSize.y >= texSize) {
+        // push old renderer state
+        // const oldParent = player.avatar.model.parent;
+        // const oldRenderTarget = renderer.getRenderTarget();
+        const oldViewport = renderer.getViewport(localVector4D);
+        
+        renderer.setViewport(0, 0, texSize/pixelRatio, texSize/pixelRatio);
+        renderer.render(scene2, camera2);
+
+        // pop old renderer state
+        /* if (oldParent) {
+          oldParent.add(player.avatar.model);
+        } else {
+          player.avatar.model.parent.remove(player.avatar.model);
+        } */
+        // renderer.setRenderTarget(oldRenderTarget);
+        renderer.setViewport(oldViewport);
+      }
+
       if (oldParent) {
         oldParent.add(app2);
       } else {
@@ -667,8 +771,10 @@ export default () => {
         const ctx = canvas.getContext('2d');
         // document.body.appendChild(canvas);
         const tex = new THREE.Texture(canvas);
+        const tex2 = new THREE.Texture(canvas);
         // tex.flipY = true;
-        tex.needsUpdate = true;
+        // tex.needsUpdate = true;
+        // tex2.needsUpdate = true;
         let canvasIndex = 0;
         
         // console.log('generate sprite', name);
@@ -708,14 +814,12 @@ export default () => {
             const y = (angleIndex - x) / numSlots;
             ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
             tex.needsUpdate = true;
+            tex2.needsUpdate = true;
 
             await _timeout(50);
           }
 
-          /* const canvasImage = await _captureCanvas(canvas, {
-            imageOrientation: 'flipY',
-          }); */
-          const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
+          const planeSpriteMesh = _makeSpritePlaneMesh(tex, tex2, {
             angleIndex: startAngleIndex,
           });
           planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
@@ -754,8 +858,12 @@ export default () => {
     for (const planeSpriteMesh of planeSpriteMeshes) {
       const {duration} = planeSpriteMesh.spriteSpec;
       const uTime = (timestamp/1000 % duration) / duration;
-      planeSpriteMesh.material.uniforms.uTime.value = uTime;
-      planeSpriteMesh.material.uniforms.uTime.needsUpdate = true;
+      [planeSpriteMesh.material, planeSpriteMesh.customPostMaterial].forEach(material => {
+        if (material) {
+          material.uniforms.uTime.value = uTime;
+          material.uniforms.uTime.needsUpdate = true;
+        }
+      });
     }
 
     for (const spriteAvatarMesh of spriteAvatarMeshes) {
