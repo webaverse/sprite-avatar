@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 // import easing from './easing.js';
 import metaversefile from 'metaversefile';
-const {useApp, useFrame, usePhysics, createAvatar, useAvatarAnimations, useInternals, useCleanup} = metaversefile;
+const {useApp, useFrame, usePhysics, useMaterials, createAvatar, useAvatarAnimations, useInternals, useCleanup} = metaversefile;
 
 // const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
@@ -22,6 +22,8 @@ const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
+
+const planeGeometry = new THREE.PlaneBufferGeometry(worldSize, worldSize);
 
 function mod(a, n) {
   return ((a % n) + n) % n;
@@ -98,6 +100,7 @@ class CameraGeometry extends THREE.BufferGeometry {
 
 export default () => {
   const app = useApp();
+  const {WebaverseShaderMaterial} = useMaterials();
   const {scene} = useInternals();
   
   const animations = useAvatarAnimations();
@@ -121,7 +124,8 @@ export default () => {
   canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
   document.body.appendChild(canvas);
   
-  let spriteAvatarMesh = null;
+  // let spriteAvatarMesh = null;
+  const planeSpriteMeshes = [];
   (async () => {
     
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
@@ -196,11 +200,11 @@ export default () => {
     const ctx = canvas.getContext('2d');
     // document.body.appendChild(canvas);
 
-    const _makeSpriteAvatarMesh = () => {
-      const avatarSpriteGeometry = new THREE.PlaneBufferGeometry(worldSize, worldSize);
+    const _makeSpritePlaneMesh = (canvas, {angleIndex}) => {
       const tex = new THREE.Texture(canvas);
+      // tex.flipY = true;
       tex.needsUpdate = true;
-      const avatarSpriteMaterial = new THREE.ShaderMaterial({
+      const planeSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
             type: 't',
@@ -212,14 +216,13 @@ export default () => {
             value: 0,
             needsUpdate: true,
           },
-          uY: {
+          uAngleIndex: {
             type: 'f',
-            value: 0,
+            value: angleIndex,
             needsUpdate: true,
           },
         },
         vertexShader: `\
-          ${THREE.ShaderChunk.common}
           precision highp float;
           precision highp int;
 
@@ -241,7 +244,136 @@ export default () => {
           varying vec3 vPos;
           varying vec3 vNormal;
 
-          ${THREE.ShaderChunk.logdepthbuf_pars_vertex}
+          void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+
+            // vViewPosition = -mvPosition.xyz;
+            vUv = uv;
+          }
+        `,
+        fragmentShader: `\
+          precision highp float;
+          precision highp int;
+
+          #define PI 3.1415926535897932384626433832795
+
+          // uniform float sunIntensity;
+          uniform sampler2D uTex;
+          // uniform vec3 uColor;
+          uniform float uTime;
+          // uniform vec3 sunDirection;
+          // uniform float distanceOffset;
+          uniform float uAngleIndex;
+          float parallaxScale = 0.3;
+          float parallaxMinLayers = 50.;
+          float parallaxMaxLayers = 50.;
+
+          // varying vec3 vViewPosition;
+          varying vec2 vUv;
+          varying vec3 vBarycentric;
+          varying float vAo;
+          varying float vSkyLight;
+          varying float vTorchLight;
+          varying vec3 vSelectColor;
+          varying vec2 vWorldUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
+
+          float edgeFactor(vec2 uv) {
+            float divisor = 0.5;
+            float power = 0.5;
+            return min(
+              pow(abs(uv.x - round(uv.x/divisor)*divisor), power),
+              pow(abs(uv.y - round(uv.y/divisor)*divisor), power)
+            ) > 0.1 ? 0.0 : 1.0;
+            /* return 1. - pow(abs(uv.x - round(uv.x/divisor)*divisor), power) *
+              pow(abs(uv.y - round(uv.y/divisor)*divisor), power); */
+          }
+
+          vec3 getTriPlanarBlend(vec3 _wNorm){
+            // in wNorm is the world-space normal of the fragment
+            vec3 blending = abs( _wNorm );
+            // blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
+            // float b = (blending.x + blending.y + blending.z);
+            // blending /= vec3(b, b, b);
+            // return min(min(blending.x, blending.y), blending.z);
+            blending = normalize(blending);
+            return blending;
+          }
+
+          void main() {
+            float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
+            float i = animationIndex + uAngleIndex;
+            float x = mod(i, ${numSlots.toFixed(8)});
+            float y = (i - x) / ${numSlots.toFixed(8)};
+            
+            gl_FragColor = texture(
+              uTex,
+              vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
+                vec2(x, -y)/${numSlots.toFixed(8)} +
+                vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
+            );
+            gl_FragColor.r = 1.;
+            /* if (gl_FragColor.a < 0.5) {
+              discard;
+            } */
+          }
+        `,
+        transparent: true,
+        // depthWrite: false,
+        // polygonOffset: true,
+        // polygonOffsetFactor: -2,
+        // polygonOffsetUnits: 1,
+        side: THREE.DoubleSide,
+      });
+      const planeSpriteMesh = new THREE.Mesh(planeGeometry, planeSpriteMaterial);
+      planeSpriteMesh.position.y = worldSize/2 - localRig.height * 0.2;
+      return planeSpriteMesh;
+    };
+    const _makeSpriteAvatarMesh = () => {
+      const tex = new THREE.Texture(canvas);
+      // tex.flipY = false;
+      tex.needsUpdate = true;
+      const avatarSpriteMaterial = new WebaverseShaderMaterial({
+        uniforms: {
+          uTex: {
+            type: 't',
+            value: tex,
+            needsUpdate: true,
+          },
+          uTime: {
+            type: 'f',
+            value: 0,
+            needsUpdate: true,
+          },
+          uY: {
+            type: 'f',
+            value: 0,
+            needsUpdate: true,
+          },
+        },
+        vertexShader: `\
+          precision highp float;
+          precision highp int;
+
+          uniform vec4 uSelectRange;
+
+          // attribute vec3 barycentric;
+          attribute float ao;
+          attribute float skyLight;
+          attribute float torchLight;
+
+          // varying vec3 vViewPosition;
+          varying vec2 vUv;
+          varying vec3 vBarycentric;
+          varying float vAo;
+          varying float vSkyLight;
+          varying float vTorchLight;
+          varying vec3 vSelectColor;
+          varying vec2 vWorldUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
 
           void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -249,7 +381,6 @@ export default () => {
 
             // vViewPosition = -mvPosition.xyz;
             vUv = uv;
-            ${THREE.ShaderChunk.logdepthbuf_vertex}
           }
         `,
         fragmentShader: `\
@@ -279,8 +410,6 @@ export default () => {
           varying vec2 vWorldUv;
           varying vec3 vPos;
           varying vec3 vNormal;
-
-          ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
 
           float edgeFactor(vec2 uv) {
             float divisor = 0.5;
@@ -320,8 +449,6 @@ export default () => {
             if (gl_FragColor.a < 0.5) {
               discard;
             }
-
-            ${THREE.ShaderChunk.logdepthbuf_fragment}
           }
         `,
         transparent: true,
@@ -331,7 +458,7 @@ export default () => {
         // polygonOffsetUnits: 1,
         side: THREE.DoubleSide,
       });
-      spriteAvatarMesh = new THREE.Mesh(avatarSpriteGeometry, avatarSpriteMaterial);
+      const spriteAvatarMesh = new THREE.Mesh(planeGeometry, avatarSpriteMaterial);
       spriteAvatarMesh.position.y = worldSize/2 - localRig.height * 0.2;
       return spriteAvatarMesh;
     };
@@ -391,12 +518,12 @@ export default () => {
         },
       }
     ];
-    const _captureImage = () => new Promise((accept, reject) => {
-      renderer.domElement.toBlob(blob => {
+    const _captureCanvas = (canvas, options) => new Promise((accept, reject) => {
+      canvas.toBlob(blob => {
         const img = new Image();
         const u = URL.createObjectURL(blob);
         img.onload = async () => {
-          const imageBitmap = await createImageBitmap(img);
+          const imageBitmap = await createImageBitmap(img, options);
           accept(imageBitmap);
           URL.revokeObjectURL(u);
         };
@@ -405,6 +532,7 @@ export default () => {
         img.src = u;
       }, 'image/png');
     });
+    const _captureRender = () => _captureCanvas(renderer.domElement);
     const _render = () => {
       const oldParent = app2.parent;
       scene2.add(app2);
@@ -417,6 +545,7 @@ export default () => {
         app2.parent.remove(app2);
       }
     };
+    let canvasIndex = 0;
     for (;;) {
       for (const spriteSpec of spriteSpecs) {
         const {name, duration} = spriteSpec;
@@ -431,6 +560,7 @@ export default () => {
           });
           // pre-run the animation one cycle first, to stabilize the hair physics
           let now = 0;
+          const startAngleIndex = angleIndex;
           for (let j = 0; j < numFrames; j++) {
             spriteGenerator.update(now, timeDiff);
             now += timeDiff;
@@ -452,20 +582,47 @@ export default () => {
             cameraMesh.quaternion.copy(camera2.quaternion);
             cameraMesh.updateMatrixWorld();
 
-            const imageBitmap = await _captureImage();
+            const frameImageBitmap = await _captureRender();
             const x = angleIndex % numSlots;
             const y = (angleIndex - x) / numSlots;
-            ctx.drawImage(imageBitmap, x * texSize, y * texSize);
+            ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
 
             await _timeout(200);
           }
+
+          const canvasImage = await _captureCanvas(canvas, {
+            imageOrientation: 'flipY',
+          });
+          const planeSpriteMesh = _makeSpritePlaneMesh(canvasImage, {
+            angleIndex: startAngleIndex,
+          });
+          planeSpriteMesh.position.set(-canvasIndex, 2, 0);
+          planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+          planeSpriteMesh.updateMatrixWorld();
+          planeSpriteMesh.spriteSpec = spriteSpec;
+          app.add(planeSpriteMesh);
+          planeSpriteMeshes.push(planeSpriteMesh);
+
+          canvasIndex++;
         }
+
+        // draw the full sprite sheet here
       }
     }
+
+    
     
     // spriteAvatarMesh = _makeSpriteAvatarMesh();
     // app.add(spriteAvatarMesh); 
   })();
+
+  useFrame(({timestamp, timeDiff}) => {
+    for (const planeSpriteMesh of planeSpriteMeshes) {
+      const {duration} = planeSpriteMesh.spriteSpec;
+      planeSpriteMesh.material.uniforms.uTime.value = (timestamp/1000 % duration) / duration;
+      planeSpriteMesh.material.uniforms.uTime.needsUpdate = true;
+    }
+  });
   
   /* const {camera} = useInternals();
   useFrame(e => {
