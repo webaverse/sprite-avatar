@@ -111,6 +111,8 @@ export default () => {
   // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
   const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
   const runAnimationDuration = runAnimation.duration * 1.5;
+  const idleAnimation = animations.find(a => a.name === 'idle.fbx');
+  const idleAnimationDuration = idleAnimation.duration * 1.5;
 
   const cameraGeometry = new CameraGeometry();
   const cameraMaterial = new THREE.MeshBasicMaterial({
@@ -460,6 +462,37 @@ export default () => {
 
     const spriteSpecs = [
       {
+        name: 'idle',
+        duration: idleAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              // positionOffset -= speed * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs, 100);
+            },
+          };
+        },
+      },
+      {
         name: 'run',
         duration: runAnimation.duration,
         init({angle}) {
@@ -518,21 +551,22 @@ export default () => {
       }
     };
     /* for (;;) */ {
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
-      document.body.appendChild(canvas);
-      const ctx = canvas.getContext('2d');
-      // document.body.appendChild(canvas);
-      const tex = new THREE.Texture(canvas);
-      // tex.flipY = true;
-      tex.needsUpdate = true;
-
-      let canvasIndex = 0;
+      let canvasIndex2 = 0;
 
       for (const spriteSpec of spriteSpecs) {
         const {name, duration} = spriteSpec;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        // document.body.appendChild(canvas);
+        const tex = new THREE.Texture(canvas);
+        // tex.flipY = true;
+        tex.needsUpdate = true;
+        let canvasIndex = 0;
         
         // console.log('generate sprite', name);
 
@@ -581,7 +615,7 @@ export default () => {
           const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
             angleIndex: startAngleIndex,
           });
-          planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, 0);
+          planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
           planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
           planeSpriteMesh.updateMatrixWorld();
           planeSpriteMesh.spriteSpec = spriteSpec;
@@ -593,13 +627,19 @@ export default () => {
 
         // draw the full sprite sheet here
         const spriteAvatarMesh = _makeSpriteAvatarMesh(tex);
-        spriteAvatarMesh.position.set(-canvasIndex*worldSize, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0);
+        spriteAvatarMesh.position.set(
+          -canvasIndex*worldSize,
+          worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize,
+          -canvasIndex2*worldSize,
+        );
         spriteAvatarMesh.scale.setScalar(spriteScaleFactor);
         // spriteAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
         spriteAvatarMesh.updateMatrixWorld();
         spriteAvatarMesh.spriteSpec = spriteSpec;
         app.add(spriteAvatarMesh); 
         spriteAvatarMeshes.push(spriteAvatarMesh);
+        
+        canvasIndex2++;
       }
     }
   })();
