@@ -465,7 +465,7 @@ export default () => {
     };
 
     const spriteSpecs = [
-      /* {
+      {
         name: 'idle',
         duration: idleAnimation.duration,
         init({angle}) {
@@ -557,7 +557,7 @@ export default () => {
             },
           };
         },
-      }, */
+      },
       {
         name: 'narutoRun',
         duration: narutoRunAnimation.duration,
