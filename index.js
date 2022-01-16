@@ -118,14 +118,9 @@ export default () => {
   );
   scene.add(cameraMesh);
   
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
-  document.body.appendChild(canvas);
-  
   // let spriteAvatarMesh = null;
   const planeSpriteMeshes = [];
+  let tex;
   (async () => {
     
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
@@ -197,13 +192,18 @@ export default () => {
     // camera.position.set(0, -localRig.height/2, -2);
     // camera.lookAt(new THREE.Vector3(0, camera.position.y, 0));
 
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
+    document.body.appendChild(canvas);
     const ctx = canvas.getContext('2d');
     // document.body.appendChild(canvas);
+    tex = new THREE.Texture(canvas);
+    // tex.flipY = true;
+    tex.needsUpdate = true;
 
     const _makeSpritePlaneMesh = (canvas, {angleIndex}) => {
-      const tex = new THREE.Texture(canvas);
-      // tex.flipY = true;
-      tex.needsUpdate = true;
       const planeSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
@@ -586,14 +586,15 @@ export default () => {
             const x = angleIndex % numSlots;
             const y = (angleIndex - x) / numSlots;
             ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
+            tex.needsUpdate = true;
 
             await _timeout(200);
           }
 
-          const canvasImage = await _captureCanvas(canvas, {
+          /* const canvasImage = await _captureCanvas(canvas, {
             imageOrientation: 'flipY',
-          });
-          const planeSpriteMesh = _makeSpritePlaneMesh(canvasImage, {
+          }); */
+          const planeSpriteMesh = _makeSpritePlaneMesh(canvas, {
             angleIndex: startAngleIndex,
           });
           planeSpriteMesh.position.set(-canvasIndex, 2, 0);
@@ -617,6 +618,9 @@ export default () => {
   })();
 
   useFrame(({timestamp, timeDiff}) => {
+    /* if (tex) {
+      tex.needsUpdate = true;
+    } */
     for (const planeSpriteMesh of planeSpriteMeshes) {
       const {duration} = planeSpriteMesh.spriteSpec;
       planeSpriteMesh.material.uniforms.uTime.value = (timestamp/1000 % duration) / duration;
