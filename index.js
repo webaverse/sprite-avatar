@@ -16,7 +16,7 @@ const speed = 10;
 const numSlots = size / texSize;
 
 const cameraHeightFactor = 0.8; // the height of the camera in avatar space
-const spriteScaleFactor = 1.18; // scale up the final sprite by this much in world space
+const spriteScaleFactor = 1.15; // scale up the final sprite by this much in world space
 const spriteFootFactor = 0.1; // offset down this factor in world space
 
 // console.log('sprite avatar index');
@@ -110,9 +110,11 @@ export default () => {
   const animations = useAvatarAnimations();
   // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
   const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
-  const runAnimationDuration = runAnimation.duration * 1.5;
+  // const runAnimationDuration = runAnimation.duration * 1.5;
   const idleAnimation = animations.find(a => a.name === 'idle.fbx');
-  const idleAnimationDuration = idleAnimation.duration * 1.5;
+  // const idleAnimationDuration = idleAnimation.duration * 1.5;
+  const crouchAnimation = animations.find(a => a.name === 'Crouch Idle.fbx');
+  // const crouchAnimationDuration = crouchAnimation.duration * 1.5;
 
   const cameraGeometry = new CameraGeometry();
   const cameraMaterial = new THREE.MeshBasicMaterial({
@@ -517,6 +519,38 @@ export default () => {
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
     
+              localRig.update(timestamp, timeDiffMs, 100);
+            },
+          };
+        },
+      },
+      {
+        name: 'crouch',
+        duration: crouchAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              // positionOffset -= speed * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.crouchTime = 0;
               localRig.update(timestamp, timeDiffMs, 100);
             },
           };
