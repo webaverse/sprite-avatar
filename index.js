@@ -662,7 +662,7 @@ export default () => {
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
-        canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
+        canvas.style = `position: fixed; top: ${canvasIndex2*1024}px; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
         document.body.appendChild(canvas);
         const ctx = canvas.getContext('2d');
         // document.body.appendChild(canvas);
