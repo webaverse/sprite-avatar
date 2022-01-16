@@ -11,11 +11,15 @@ const texSize = 512;
 const numFrames = 20;
 const numAngles = 8;
 const worldSize = 2;
-const distance = 2;
+const distance = 2.2;
 const speed = 10;
 const numSlots = size / texSize;
 
-console.log('sprite avatar index');
+const cameraHeightFactor = 0.8; // the height of the camera in avatar space
+const spriteScaleFactor = 1.18; // scale up the final sprite by this much in world space
+const spriteFootFactor = 0.1; // offset down this factor in world space
+
+// console.log('sprite avatar index');
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -101,7 +105,7 @@ class CameraGeometry extends THREE.BufferGeometry {
 export default () => {
   const app = useApp();
   const {WebaverseShaderMaterial} = useMaterials();
-  const {scene} = useInternals();
+  const {scene, camera} = useInternals();
   
   const animations = useAvatarAnimations();
   // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
@@ -120,7 +124,8 @@ export default () => {
   
   // let spriteAvatarMesh = null;
   const planeSpriteMeshes = [];
-  let tex;
+  const spriteAvatarMeshes = [];
+  // let tex;
   (async () => {
     
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
@@ -192,18 +197,7 @@ export default () => {
     // camera.position.set(0, -localRig.height/2, -2);
     // camera.lookAt(new THREE.Vector3(0, camera.position.y, 0));
 
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
-    document.body.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-    // document.body.appendChild(canvas);
-    tex = new THREE.Texture(canvas);
-    // tex.flipY = true;
-    tex.needsUpdate = true;
-
-    const _makeSpritePlaneMesh = (canvas, {angleIndex}) => {
+    const _makeSpritePlaneMesh = (tex, {angleIndex}) => {
       const planeSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
@@ -315,6 +309,7 @@ export default () => {
                 vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
             );
             gl_FragColor.r = 1.;
+            gl_FragColor.a = 1.;
             /* if (gl_FragColor.a < 0.5) {
               discard;
             } */
@@ -328,13 +323,12 @@ export default () => {
         side: THREE.DoubleSide,
       });
       const planeSpriteMesh = new THREE.Mesh(planeGeometry, planeSpriteMaterial);
-      planeSpriteMesh.position.y = worldSize/2 - localRig.height * 0.2;
       return planeSpriteMesh;
     };
-    const _makeSpriteAvatarMesh = () => {
-      const tex = new THREE.Texture(canvas);
+    const _makeSpriteAvatarMesh = tex => {
+      /* const tex = new THREE.Texture(canvas);
       // tex.flipY = false;
-      tex.needsUpdate = true;
+      tex.needsUpdate = true; */
       const avatarSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
@@ -446,9 +440,11 @@ export default () => {
                 vec2(x, -y)/${numSlots.toFixed(8)} +
                 vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
             );
-            if (gl_FragColor.a < 0.5) {
+            gl_FragColor.r = 1.;
+            gl_FragColor.a = 1.;
+            /* if (gl_FragColor.a < 0.5) {
               discard;
-            }
+            } */
           }
         `,
         transparent: true,
@@ -459,7 +455,6 @@ export default () => {
         side: THREE.DoubleSide,
       });
       const spriteAvatarMesh = new THREE.Mesh(planeGeometry, avatarSpriteMaterial);
-      spriteAvatarMesh.position.y = worldSize/2 - localRig.height * 0.2;
       return spriteAvatarMesh;
     };
 
@@ -476,11 +471,11 @@ export default () => {
               const timeDiffMs = timeDiff/1000;
               positionOffset -= speed * timeDiffMs;
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(0, localRig.height*0.5, positionOffset)
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
               // camera2.quaternion.setFromEuler(euler);
               camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(0, localRig.height*0.5, positionOffset));
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
@@ -516,7 +511,7 @@ export default () => {
             },
           };
         },
-      }
+      },
     ];
     const _captureCanvas = (canvas, options) => new Promise((accept, reject) => {
       canvas.toBlob(blob => {
@@ -545,8 +540,20 @@ export default () => {
         app2.parent.remove(app2);
       }
     };
-    let canvasIndex = 0;
-    for (;;) {
+    /* for (;;) */ {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      canvas.style = `position: fixed; top: 0; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
+      document.body.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+      // document.body.appendChild(canvas);
+      const tex = new THREE.Texture(canvas);
+      // tex.flipY = true;
+      tex.needsUpdate = true;
+
+      let canvasIndex = 0;
+
       for (const spriteSpec of spriteSpecs) {
         const {name, duration} = spriteSpec;
         
@@ -588,16 +595,16 @@ export default () => {
             ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
             tex.needsUpdate = true;
 
-            await _timeout(200);
+            await _timeout(50);
           }
 
           /* const canvasImage = await _captureCanvas(canvas, {
             imageOrientation: 'flipY',
           }); */
-          const planeSpriteMesh = _makeSpritePlaneMesh(canvas, {
+          const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
             angleIndex: startAngleIndex,
           });
-          planeSpriteMesh.position.set(-canvasIndex, 2, 0);
+          planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, 0);
           planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
           planeSpriteMesh.updateMatrixWorld();
           planeSpriteMesh.spriteSpec = spriteSpec;
@@ -608,13 +615,16 @@ export default () => {
         }
 
         // draw the full sprite sheet here
+        const spriteAvatarMesh = _makeSpriteAvatarMesh(tex);
+        spriteAvatarMesh.position.set(-canvasIndex*worldSize, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0);
+        spriteAvatarMesh.scale.setScalar(spriteScaleFactor);
+        // spriteAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+        spriteAvatarMesh.updateMatrixWorld();
+        spriteAvatarMesh.spriteSpec = spriteSpec;
+        app.add(spriteAvatarMesh); 
+        spriteAvatarMeshes.push(spriteAvatarMesh);
       }
     }
-
-    
-    
-    // spriteAvatarMesh = _makeSpriteAvatarMesh();
-    // app.add(spriteAvatarMesh); 
   })();
 
   useFrame(({timestamp, timeDiff}) => {
@@ -623,8 +633,35 @@ export default () => {
     } */
     for (const planeSpriteMesh of planeSpriteMeshes) {
       const {duration} = planeSpriteMesh.spriteSpec;
-      planeSpriteMesh.material.uniforms.uTime.value = (timestamp/1000 % duration) / duration;
+      const uTime = (timestamp/1000 % duration) / duration;
+      planeSpriteMesh.material.uniforms.uTime.value = uTime;
       planeSpriteMesh.material.uniforms.uTime.needsUpdate = true;
+    }
+
+    for (const spriteAvatarMesh of spriteAvatarMeshes) {
+      const {duration} = spriteAvatarMesh.spriteSpec;
+      const uTime = (timestamp/1000 % duration) / duration;
+
+      localQuaternion
+        .setFromRotationMatrix(
+          localMatrix.lookAt(
+            spriteAvatarMesh.getWorldPosition(localVector),
+            camera.position,
+            localVector2.set(0, 1, 0)
+          )
+        )
+        .premultiply(app.quaternion.clone().invert());
+      localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+      localEuler.x = 0;
+      localEuler.z = 0;
+      spriteAvatarMesh.quaternion.setFromEuler(localEuler);
+      spriteAvatarMesh.updateMatrixWorld();
+
+      spriteAvatarMesh.material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+      spriteAvatarMesh.material.uniforms.uY.needsUpdate = true;
+
+      spriteAvatarMesh.material.uniforms.uTime.value = uTime;
+      spriteAvatarMesh.material.uniforms.uTime.needsUpdate = true;
     }
   });
   
