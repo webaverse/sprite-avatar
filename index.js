@@ -132,6 +132,135 @@ class CameraGeometry extends THREE.BufferGeometry {
   }
 }
 
+const _addPlaneSpriteMaterialUniforms = (uniforms, tex, angleIndex) => {
+  uniforms.uTex = {
+    type: 't',
+    value: tex,
+    // needsUpdate: true,
+  };
+  uniforms.uTime = {
+    type: 'f',
+    value: 0,
+    needsUpdate: true,
+  };
+  uniforms.uAngleIndex = {
+    type: 'f',
+    value: angleIndex,
+    needsUpdate: true,
+  };
+  return uniforms;
+};
+class PlaneSpriteDepthMaterial extends THREE.MeshNormalMaterial {
+  constructor(options = {}, options2 = {}) {
+    super(options);
+    // this.blending = THREE.NoBlending;
+    this.transparent = true;
+
+    this.uniforms = null;
+    this.options2 = options2;
+  }
+  onBeforeCompile(parameters) {
+    parameters.uniforms = _addPlaneSpriteMaterialUniforms(parameters.uniforms, this.options2.tex, this.options2.angleIndex);
+    this.uniforms = parameters.uniforms;
+
+    parameters.vertexShader = parameters.vertexShader.replace('void main() {\n', `\
+      // attribute vec2 uv;
+      varying vec2 vUv;
+    ` + 'void main() {\n' + `\
+      vUv = uv;
+    `);
+    parameters.fragmentShader = parameters.fragmentShader.replace('void main() {\n', `\
+      uniform float uTime;
+      uniform float uAngleIndex;
+      uniform sampler2D uTex;
+      varying vec2 vUv;
+    ` + 'void main() {\n' + `\
+      float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
+      float i = animationIndex + uAngleIndex;
+      float x = mod(i, ${numSlots.toFixed(8)});
+      float y = (i - x) / ${numSlots.toFixed(8)};
+      
+      vec4 tCol = texture(
+        uTex,
+        vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
+          vec2(x, -y)/${numSlots.toFixed(8)} +
+          vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
+      );
+      if (tCol.a < ${alphaTest.toFixed(8)}) {
+        discard;
+      }
+    `);
+
+    // console.log('got normal map shader', parameters.vertexShader, parameters.fragmentShader);
+  }
+}
+const _addAvatarSpriteMaterialUniforms = (uniforms, tex) => {
+  uniforms.uTex = {
+    type: 't',
+    value: tex,
+    // needsUpdate: true,
+  };
+  uniforms.uTime = {
+    type: 'f',
+    value: 0,
+    needsUpdate: true,
+  };
+  uniforms.uY = {
+    type: 'f',
+    value: 0,
+    needsUpdate: true,
+  };
+  return uniforms;
+};
+class AvatarSpriteDepthMaterial extends THREE.MeshNormalMaterial {
+  constructor(options = {}, options2 = {}) {
+    super(options);
+    // this.blending = THREE.NoBlending;
+    this.transparent = true;
+
+    this.uniforms = null;
+    this.options2 = options2;
+  }
+  onBeforeCompile(parameters) {
+    parameters.uniforms = _addAvatarSpriteMaterialUniforms(parameters.uniforms, this.options2.tex);
+    this.uniforms = parameters.uniforms;
+
+    parameters.vertexShader = parameters.vertexShader.replace('void main() {\n', `\
+      // attribute vec2 uv;
+      varying vec2 vUv;
+    ` + 'void main() {\n' + `\
+      vUv = uv;
+    `);
+    parameters.fragmentShader = parameters.fragmentShader.replace('void main() {\n', `\
+      uniform float uTime;
+      uniform float uY;
+      uniform sampler2D uTex;
+      varying vec2 vUv;
+    ` + 'void main() {\n' + `\
+      float angleIndex = floor(uY * ${numAngles.toFixed(8)});
+      float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
+      float i = animationIndex + angleIndex * ${numFrames.toFixed(8)};
+      float x = mod(i, ${numSlots.toFixed(8)});
+      float y = (i - x) / ${numSlots.toFixed(8)};
+      
+      vec4 tCol = texture(
+        uTex,
+        vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
+          vec2(x, -y)/${numSlots.toFixed(8)} +
+          vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
+      );
+      // gl_FragColor.r = 1.;
+      // gl_FragColor.a = 1.;
+      if (tCol.a < ${alphaTest}) {
+        discard;
+      }
+     //  gl_FragColor.a = 1.;
+    `);
+
+    // console.log('got normal map shader', parameters.vertexShader, parameters.fragmentShader);
+  }
+}
+
 export default () => {
   const app = useApp();
   const {WebaverseShaderMaterial} = useMaterials();
@@ -158,7 +287,6 @@ export default () => {
   );
   scene.add(cameraMesh);
   
-  // let spriteAvatarMesh = null;
   const planeSpriteMeshes = [];
   const spriteAvatarMeshes = [];
   // let tex;
@@ -233,13 +361,13 @@ export default () => {
     // camera.position.set(0, -localRig.height/2, -2);
     // camera.lookAt(new THREE.Vector3(0, camera.position.y, 0));
 
-    const _makeSpritePlaneMesh = (tex, tex2, {angleIndex}) => {
+    const _makeSpritePlaneMesh = (tex, {angleIndex}) => {
       const planeSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
             type: 't',
             value: tex,
-            needsUpdate: true,
+            // needsUpdate: true,
           },
           uTime: {
             type: 'f',
@@ -349,6 +477,7 @@ export default () => {
             if (gl_FragColor.a < ${alphaTest}) {
               discard;
             }
+            gl_FragColor.a = 1.;
           }
         `,
         transparent: true,
@@ -359,101 +488,22 @@ export default () => {
         // side: THREE.DoubleSide,
       });
       const planeSpriteMesh = new THREE.Mesh(planeGeometry, planeSpriteMaterial);
-      planeSpriteMesh.customPostMaterial2 = new WebaverseShaderMaterial({
-        uniforms: {
-          uTex: {
-            type: 't',
-            value: tex2,
-            needsUpdate: true,
-          },
-          uTime: {
-            type: 'f',
-            value: 0,
-            needsUpdate: true,
-          },
-          uAngleIndex: {
-            type: 'f',
-            value: angleIndex,
-            needsUpdate: true,
-          },
-        },
-        vertexShader: `\
-          precision highp float;
-          precision highp int;
-
-          uniform vec4 uSelectRange;
-
-          // attribute vec3 barycentric;
-          attribute float ao;
-          attribute float skyLight;
-          attribute float torchLight;
-
-          // varying vec3 vViewPosition;
-          varying vec2 vUv;
-          varying vec3 vBarycentric;
-          varying float vAo;
-          varying float vSkyLight;
-          varying float vTorchLight;
-          varying vec3 vSelectColor;
-          varying vec2 vWorldUv;
-          varying vec3 vPos;
-          varying vec3 vNormal;
-
-          void main() {
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            gl_Position = projectionMatrix * mvPosition;
-
-            // vViewPosition = -mvPosition.xyz;
-            vUv = uv;
-          }
-        `,
-        fragmentShader: `\
-          precision highp float;
-          precision highp int;
-
-          #define PI 3.1415926535897932384626433832795
-
-          // uniform float sunIntensity;
-          uniform sampler2D uTex;
-          // uniform vec3 uColor;
-          uniform float uTime;
-          // uniform vec3 sunDirection;
-          // uniform float distanceOffset;
-          uniform float uAngleIndex;
-          float parallaxScale = 0.3;
-          float parallaxMinLayers = 50.;
-          float parallaxMaxLayers = 50.;
-
-          // varying vec3 vViewPosition;
-          varying vec2 vUv;
-          varying vec3 vBarycentric;
-          varying float vAo;
-          varying float vSkyLight;
-          varying float vTorchLight;
-          varying vec3 vSelectColor;
-          varying vec2 vWorldUv;
-          varying vec3 vPos;
-          varying vec3 vNormal;
-
-          void main() {
-            
-            gl_FragColor = vec4(vec3(1., 0., 0.), 1.);
-          }
-        `,
-        transparent: true,
+      planeSpriteMesh.customPostMaterial = new PlaneSpriteDepthMaterial(undefined, {
+        tex,
+        angleIndex,
       });
+      /* const normalMaterial = new THREE.MeshNormalMaterial();
+      normalMaterial.blending = THREE.NoBlending;
+      planeSpriteMesh.customPostMaterial = normalMaterial; */
       return planeSpriteMesh;
     };
     const _makeSpriteAvatarMesh = tex => {
-      /* const tex = new THREE.Texture(canvas);
-      // tex.flipY = false;
-      tex.needsUpdate = true; */
       const avatarSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
             type: 't',
             value: tex,
-            needsUpdate: true,
+            // needsUpdate: true,
           },
           uTime: {
             type: 'f',
@@ -564,6 +614,7 @@ export default () => {
             if (gl_FragColor.a < ${alphaTest}) {
               discard;
             }
+            gl_FragColor.a = 1.;
           }
         `,
         transparent: true,
@@ -574,6 +625,9 @@ export default () => {
         // side: THREE.DoubleSide,
       });
       const spriteAvatarMesh = new THREE.Mesh(planeGeometry, avatarSpriteMaterial);
+      spriteAvatarMesh.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
+        tex,
+      });
       return spriteAvatarMesh;
     };
 
@@ -737,8 +791,11 @@ export default () => {
         // const oldParent = player.avatar.model.parent;
         // const oldRenderTarget = renderer.getRenderTarget();
         const oldViewport = renderer.getViewport(localVector4D);
+        const oldClearAlpha = renderer.getClearAlpha();
         
         renderer.setViewport(0, 0, texSize/pixelRatio, texSize/pixelRatio);
+        renderer.setClearAlpha(0);
+        renderer.clear();
         renderer.render(scene2, camera2);
 
         // pop old renderer state
@@ -749,6 +806,7 @@ export default () => {
         } */
         // renderer.setRenderTarget(oldRenderTarget);
         renderer.setViewport(oldViewport);
+        renderer.setClearAlpha(oldClearAlpha);
       }
 
       if (oldParent) {
@@ -771,10 +829,9 @@ export default () => {
         const ctx = canvas.getContext('2d');
         // document.body.appendChild(canvas);
         const tex = new THREE.Texture(canvas);
-        const tex2 = new THREE.Texture(canvas);
+        // tex.minFilter = THREE.NearestFilter;
+        // tex.magFilter = THREE.NearestFilter;
         // tex.flipY = true;
-        // tex.needsUpdate = true;
-        // tex2.needsUpdate = true;
         let canvasIndex = 0;
         
         // console.log('generate sprite', name);
@@ -814,16 +871,16 @@ export default () => {
             const y = (angleIndex - x) / numSlots;
             ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
             tex.needsUpdate = true;
-            tex2.needsUpdate = true;
+            // tex2.needsUpdate = true;
 
             await _timeout(50);
           }
 
-          const planeSpriteMesh = _makeSpritePlaneMesh(tex, tex2, {
+          const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
             angleIndex: startAngleIndex,
           });
           planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
-          planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+          // planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
           planeSpriteMesh.updateMatrixWorld();
           planeSpriteMesh.spriteSpec = spriteSpec;
           app.add(planeSpriteMesh);
@@ -859,7 +916,7 @@ export default () => {
       const {duration} = planeSpriteMesh.spriteSpec;
       const uTime = (timestamp/1000 % duration) / duration;
       [planeSpriteMesh.material, planeSpriteMesh.customPostMaterial].forEach(material => {
-        if (material) {
+        if (material?.uniforms) {
           material.uniforms.uTime.value = uTime;
           material.uniforms.uTime.needsUpdate = true;
         }
@@ -885,11 +942,15 @@ export default () => {
       spriteAvatarMesh.quaternion.setFromEuler(localEuler);
       spriteAvatarMesh.updateMatrixWorld();
 
-      spriteAvatarMesh.material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
-      spriteAvatarMesh.material.uniforms.uY.needsUpdate = true;
+      [spriteAvatarMesh.material, spriteAvatarMesh.customPostMaterial].forEach(material => {
+        if (material?.uniforms) {
+          material.uniforms.uTime.value = uTime;
+          material.uniforms.uTime.needsUpdate = true;
 
-      spriteAvatarMesh.material.uniforms.uTime.value = uTime;
-      spriteAvatarMesh.material.uniforms.uTime.needsUpdate = true;
+          material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+          material.uniforms.uY.needsUpdate = true;
+        }
+      });
     }
   });
   
