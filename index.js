@@ -431,7 +431,7 @@ export default () => {
           });
           // pre-run the animation one cycle first, to stabilize the hair physics
           let now = 0;
-          for (let j = 0; j < numFrames * 10; j++) {
+          for (let j = 0; j < numFrames; j++) {
             spriteGenerator.update(now, timeDiff);
             now += timeDiff;
           }
