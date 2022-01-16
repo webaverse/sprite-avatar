@@ -308,11 +308,11 @@ export default () => {
                 vec2(x, -y)/${numSlots.toFixed(8)} +
                 vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
             );
-            gl_FragColor.r = 1.;
-            gl_FragColor.a = 1.;
-            /* if (gl_FragColor.a < 0.5) {
+            // gl_FragColor.r = 1.;
+            // gl_FragColor.a = 1.;
+            if (gl_FragColor.a < 0.5) {
               discard;
-            } */
+            }
           }
         `,
         transparent: true,
@@ -440,11 +440,11 @@ export default () => {
                 vec2(x, -y)/${numSlots.toFixed(8)} +
                 vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
             );
-            gl_FragColor.r = 1.;
-            gl_FragColor.a = 1.;
-            /* if (gl_FragColor.a < 0.5) {
+            // gl_FragColor.r = 1.;
+            // gl_FragColor.a = 1.;
+            if (gl_FragColor.a < 0.5) {
               discard;
-            } */
+            }
           }
         `,
         transparent: true,
@@ -466,14 +466,11 @@ export default () => {
           let positionOffset = 0;
           return {
             update(timestamp, timeDiff) {
-              // console.log('render', timestamp);
-    
               const timeDiffMs = timeDiff/1000;
               positionOffset -= speed * timeDiffMs;
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              // camera2.quaternion.setFromEuler(euler);
               camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
@@ -481,33 +478,13 @@ export default () => {
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
               
-              /* const localPlayer = metaversefile.useLocalPlayer();
-              const jumpAction = localPlayer.actions.find(action => action.type === 'jump');
-              const jumpTime = jumpAction? jumpAction.time : -1;
-              const flyAction = localPlayer.actions.find(action => action.type === 'fly');
-              const flyTime = flyAction ? flyAction.time : -1;
-              const useAction = localPlayer.actions.find(action => action.type === 'use');
-              const useTime = useAction ? useAction.time : -1; */
-              
               for (let h = 0; h < 2; h++) {
                 localRig.setHandEnabled(h, false);
               }
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
-              // localRig.direction.set(0, 0, -1);
-              // localRig.velocity.set(0, 0, -1);
-              /* localRig.jumpState = !!jumpAction;
-              localRig.jumpTime = jumpTime;
-              localRig.flyState = !!flyAction;
-              localRig.flyTime = flyTime;
-              localRig.useTime = useTime; */
-              // const useAnimation = (useAction?.animation) || '';
-              // localRig.useAnimation = useAnimation;
     
-              localRig.update(/*1000 +*/ timestamp, timeDiffMs, 100);
-    
-              window.app2 = app2;
-              window.rig2 = localRig;
+              localRig.update(timestamp, timeDiffMs, 100);
             },
           };
         },
