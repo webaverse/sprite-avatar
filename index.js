@@ -45,6 +45,8 @@ const cameraHeightFactor = 0.8; // the height of the camera in avatar space
 const spriteScaleFactor = 1.15; // scale up the final sprite by this much in world space
 const spriteFootFactor = 0.1; // offset down this factor in world space
 
+const alphaTest = 0.9;
+
 // console.log('sprite avatar index');
 
 const localVector = new THREE.Vector3();
@@ -342,7 +344,7 @@ export default () => {
             );
             // gl_FragColor.r = 1.;
             // gl_FragColor.a = 1.;
-            if (gl_FragColor.a < 0.5) {
+            if (gl_FragColor.a < ${alphaTest}) {
               discard;
             }
           }
@@ -474,7 +476,7 @@ export default () => {
             );
             // gl_FragColor.r = 1.;
             // gl_FragColor.a = 1.;
-            if (gl_FragColor.a < 0.5) {
+            if (gl_FragColor.a < ${alphaTest}) {
               discard;
             }
           }
