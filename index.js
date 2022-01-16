@@ -355,10 +355,6 @@ export default () => {
               camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*0.5, positionOffset));
               camera2.updateMatrixWorld();
-
-              cameraMesh.position.copy(camera2.position);
-              cameraMesh.quaternion.copy(camera2.quaternion);
-              cameraMesh.updateMatrixWorld();
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
@@ -388,9 +384,6 @@ export default () => {
     
               localRig.update(/*1000 +*/ timestamp, timeDiffMs, 100);
     
-              // rootBone.position.set(0, 0, 0);
-              // rootBone.updateMatrixWorld();
-    
               window.app2 = app2;
               window.rig2 = localRig;
             },
@@ -398,7 +391,7 @@ export default () => {
         },
       }
     ];
-    const _drawImage = () => new Promise((accept, reject) => {
+    const _captureImage = () => new Promise((accept, reject) => {
       renderer.domElement.toBlob(blob => {
         const img = new Image();
         const u = URL.createObjectURL(blob);
@@ -438,10 +431,11 @@ export default () => {
           });
           // pre-run the animation one cycle first, to stabilize the hair physics
           let now = 0;
-          for (let j = 0; j < numFrames * 5; j++) {
+          for (let j = 0; j < numFrames * 10; j++) {
             spriteGenerator.update(now, timeDiff);
             now += timeDiff;
           }
+          const initialPositionOffset = localRig.inputs.hmd.position.z;
           // now perform the real capture
           for (let j = 0; j < numFrames; j++, angleIndex++) {
             spriteGenerator.update(now, timeDiff);
@@ -449,7 +443,16 @@ export default () => {
 
             _render();
 
-            const imageBitmap = await _drawImage();
+            const positionOffset = localRig.inputs.hmd.position.z;
+            rootBone.position.set(0, 0, positionOffset - initialPositionOffset);
+            rootBone.updateMatrixWorld();
+
+            cameraMesh.position.copy(camera2.position);
+            cameraMesh.position.z -= initialPositionOffset;
+            cameraMesh.quaternion.copy(camera2.quaternion);
+            cameraMesh.updateMatrixWorld();
+
+            const imageBitmap = await _captureImage();
             const x = angleIndex % numSlots;
             const y = (angleIndex - x) / numSlots;
             ctx.drawImage(imageBitmap, x * texSize, y * texSize);
