@@ -5,7 +5,7 @@ const {useApp, useFrame, usePhysics, useMaterials, createAvatar, useAvatarAnimat
 
 // const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
-const size = 4096;
+const size = 4096 * 2;
 const texSize = 512;
 // const numFrames = 7;
 const numFrames = 20;
