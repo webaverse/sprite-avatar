@@ -38,7 +38,10 @@ const numFrames = 7;
 const numAngles = 8;
 const worldSize = 2;
 const distance = 2.2;
-const speed = 10;
+const walkSpeed = 3;
+const runSpeed = 9;
+const crouchSpeed = 2;
+const narutoRunSpeed = 59;
 const numSlots = size / texSize;
 
 const cameraHeightFactor = 0.8; // the height of the camera in avatar space
@@ -267,15 +270,12 @@ export default () => {
   const {renderer, scene, camera} = useInternals();
   
   const animations = useAvatarAnimations();
-  // const walkAnimation = animations.find(a => a.name === 'walking.fbx');
+  const walkAnimation = animations.find(a => a.name === 'walking.fbx');
   const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
-  // const runAnimationDuration = runAnimation.duration * 1.5;
   const idleAnimation = animations.find(a => a.name === 'idle.fbx');
-  // const idleAnimationDuration = idleAnimation.duration * 1.5;
-  const crouchAnimation = animations.find(a => a.name === 'Crouch Idle.fbx');
-  // const crouchAnimationDuration = crouchAnimation.duration * 1.5;
+  const crouchIdleAnimation = animations.find(a => a.name === 'Crouch Idle.fbx');
+  const crouchWalkAnimation = animations.find(a => a.name === 'Sneaking Forward.fbx');
   const narutoRunAnimation = animations.find(a => a.name === 'naruto run.fbx');
-  // narutoRunAnimationDuration = narutoRunAnimation.duration * 1.5;
 
   const cameraGeometry = new CameraGeometry();
   const cameraMaterial = new THREE.MeshBasicMaterial({
@@ -632,7 +632,7 @@ export default () => {
     };
 
     const spriteSpecs = [
-      {
+      /* {
         name: 'idle',
         duration: idleAnimation.duration,
         init({angle}) {
@@ -640,7 +640,7 @@ export default () => {
           return {
             update(timestamp, timeDiff) {
               const timeDiffMs = timeDiff/1000;
-              // positionOffset -= speed * timeDiffMs;
+              // positionOffset -= walkSpeed/1000 * timeDiffMs;
               
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
@@ -671,7 +671,39 @@ export default () => {
           return {
             update(timestamp, timeDiff) {
               const timeDiffMs = timeDiff/1000;
-              positionOffset -= speed * timeDiffMs;
+              positionOffset -= runSpeed/1000 * timeDiffMs;
+
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      }, */
+      {
+        name: 'walk',
+        duration: walkAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= walkSpeed/1000 * timeDiffMs;
+
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
@@ -694,14 +726,14 @@ export default () => {
         },
       },
       {
-        name: 'crouch',
-        duration: crouchAnimation.duration,
+        name: 'crouch idle',
+        duration: crouchIdleAnimation.duration,
         init({angle}) {
           let positionOffset = 0;
           return {
             update(timestamp, timeDiff) {
               const timeDiffMs = timeDiff/1000;
-              // positionOffset -= speed * timeDiffMs;
+              // positionOffset -= crouchSpeed/1000 * timeDiffMs;
               
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
@@ -726,6 +758,38 @@ export default () => {
         },
       },
       {
+        name: 'crouch walk',
+        duration: crouchWalkAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= crouchSpeed/1000 * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.crouchTime = 0;
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      /* {
         name: 'narutoRun',
         duration: narutoRunAnimation.duration,
         init({angle}) {
@@ -733,7 +797,7 @@ export default () => {
           return {
             update(timestamp, timeDiff) {
               const timeDiffMs = timeDiff/1000;
-              // positionOffset -= speed * timeDiffMs;
+              positionOffset -= narutoRunSpeed/1000 * timeDiffMs;
               
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
@@ -763,7 +827,7 @@ export default () => {
             },
           };
         },
-      },
+      }, */
     ];
     const _captureCanvas = (canvas, sx, sy, sw, sh, options) => new Promise((accept, reject) => {
       canvas.toBlob(blob => {
