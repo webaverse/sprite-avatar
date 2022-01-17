@@ -322,6 +322,7 @@ export default () => {
   const spriteAvatarMeshes = [];
   let spriteMegaAvatarMesh = null;
   let localRig = null;
+  let spriteSpecs = null;
   (async () => {
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
     const m = await metaversefile.import(vrmUrl);
@@ -664,12 +665,12 @@ export default () => {
     };
     const _makeSpriteMegaAvatarMesh = (rig, texs) => {
       const tex = texs[0];
-      const avatarSpriteMaterial = new WebaverseShaderMaterial({
+      const avatarMegaSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
           uTex: {
             type: 't',
             value: tex,
-            // needsUpdate: true,
+            needsUpdate: true,
           },
           uTime: {
             type: 'f',
@@ -790,14 +791,24 @@ export default () => {
         // polygonOffsetUnits: 1,
         // side: THREE.DoubleSide,
       });
-      const spriteMegaAvatarMesh = new THREE.Mesh(planeWarpedGeometry2, avatarSpriteMaterial);
+      const spriteMegaAvatarMesh = new THREE.Mesh(planeWarpedGeometry2, avatarMegaSpriteMaterial);
       spriteMegaAvatarMesh.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
         tex,
       });
+      spriteMegaAvatarMesh.setTexture = name => {
+        const tex = texs.find(t => t.name === name);
+        if (tex) {
+          avatarMegaSpriteMaterial.uniforms.uTex.value = tex;
+          avatarMegaSpriteMaterial.uniforms.uTex.needsUpdate = true;
+          return true;
+        } else {
+          return false;
+        }
+      };
       return spriteMegaAvatarMesh;
     };
 
-    const spriteSpecs = [
+    spriteSpecs = [
       {
         name: 'idle',
         duration: idleAnimation.duration,
@@ -827,6 +838,141 @@ export default () => {
               localRig.update(timestamp, timeDiffMs);
             },
           };
+        },
+      },
+      {
+        name: 'walk',
+        duration: walkAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= walkSpeed/1000 * timeDiffMs;
+
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
+        name: 'run',
+        duration: runAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= runSpeed/1000 * timeDiffMs;
+
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
+        name: 'crouch idle',
+        duration: crouchIdleAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              // positionOffset -= crouchSpeed/1000 * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+
+              localRig.crouchTime = 0;
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+            cleanup() {
+              localRig.crouchTime = maxCrouchTime;
+            },
+          };
+        },
+      },
+      {
+        name: 'naruto run',
+        duration: narutoRunAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= narutoRunSpeed/1000 * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+
+              localRig.narutoRunState = true;
+              localRig.narutoRunTime = timestamp;
+
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+        cleanup() {
+          localRig.narutoRunState = false;
         },
       },
       /* {
@@ -875,37 +1021,6 @@ export default () => {
             },
             cleanup() {
               localRig.jumpState = false;
-            },
-          };
-        },
-      },
-      {
-        name: 'run',
-        duration: runAnimation.duration,
-        init({angle}) {
-          let positionOffset = 0;
-          return {
-            update(timestamp, timeDiff) {
-              const timeDiffMs = timeDiff/1000;
-              positionOffset -= runSpeed/1000 * timeDiffMs;
-
-              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
-                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
-              camera2.updateMatrixWorld();
-              
-              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
-              localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
-    
-              localRig.update(timestamp, timeDiffMs);
             },
           };
         },
@@ -1054,37 +1169,6 @@ export default () => {
               camera2.updateMatrixWorld();
               
               localRig.inputs.hmd.position.set(positionOffsetDiff, localRig.height, positionOffsetDiff);
-              localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
-    
-              localRig.update(timestamp, timeDiffMs);
-            },
-          };
-        },
-      },
-      {
-        name: 'walk',
-        duration: walkAnimation.duration,
-        init({angle}) {
-          let positionOffset = 0;
-          return {
-            update(timestamp, timeDiff) {
-              const timeDiffMs = timeDiff/1000;
-              positionOffset -= walkSpeed/1000 * timeDiffMs;
-
-              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
-                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
-              camera2.updateMatrixWorld();
-              
-              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
               
               for (let h = 0; h < 2; h++) {
@@ -1251,42 +1335,6 @@ export default () => {
               localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
-            },
-          };
-        },
-      },
-      {
-        name: 'crouch idle',
-        duration: crouchIdleAnimation.duration,
-        init({angle}) {
-          let positionOffset = 0;
-          return {
-            update(timestamp, timeDiff) {
-              const timeDiffMs = timeDiff/1000;
-              // positionOffset -= crouchSpeed/1000 * timeDiffMs;
-              
-              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
-                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
-              camera2.updateMatrixWorld();
-              
-              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
-              localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
-
-              localRig.crouchTime = 0;
-    
-              localRig.update(timestamp, timeDiffMs);
-            },
-            cleanup() {
-              localRig.crouchTime = maxCrouchTime;
             },
           };
         },
@@ -1508,43 +1556,6 @@ export default () => {
             },
           };
         },
-      },
-      {
-        name: 'narutoRun',
-        duration: narutoRunAnimation.duration,
-        init({angle}) {
-          let positionOffset = 0;
-          return {
-            update(timestamp, timeDiff) {
-              const timeDiffMs = timeDiff/1000;
-              positionOffset -= narutoRunSpeed/1000 * timeDiffMs;
-              
-              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
-                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
-              camera2.updateMatrixWorld();
-              
-              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
-              localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
-
-              localRig.narutoRunState = true;
-              localRig.narutoRunTime = timestamp;
-
-              localRig.update(timestamp, timeDiffMs);
-            },
-          };
-        },
-        cleanup() {
-          localRig.narutoRunState = false;
-        },
       }, */
     ];
     // window.spriteSpecs = spriteSpecs;
@@ -1752,6 +1763,7 @@ export default () => {
       });
     }
     if (spriteMegaAvatarMesh) {
+      // matrix transform
       spriteMegaAvatarMesh.position.copy(localPlayer.position);
       spriteMegaAvatarMesh.position.y -= localRig.height;
 
@@ -1763,7 +1775,6 @@ export default () => {
             localVector2.set(0, 1, 0)
           )
         )
-        // .multiply(y180Quaternion);
       localEuler.setFromQuaternion(localQuaternion, 'YXZ');
       localEuler.x = 0;
       localEuler.z = 0;
@@ -1771,13 +1782,46 @@ export default () => {
       spriteMegaAvatarMesh.quaternion.setFromEuler(localEuler);
       spriteMegaAvatarMesh.updateMatrixWorld();
 
+      // select the texture
+      const spriteSpecName = (() => {
+        if (localPlayer.avatar.narutoRunState) {
+          return 'naruto run';
+        } else if (localPlayer.avatar.crouchTime === 0) {
+          return 'crouch idle';
+        } else {
+          const currentSpeed = localVector.set(localPlayer.characterPhysics.velocity.x, 0, localPlayer.characterPhysics.velocity.z).length();
+          const idleSpeedDistance = currentSpeed;
+          const walkSpeedDistance = Math.abs(walkSpeed - currentSpeed);
+          const runSpeedDistance = Math.abs(runSpeed - currentSpeed);
+          const speedDistances = [
+            {
+              name: 'idle',
+              distance: idleSpeedDistance,
+            },
+            {
+              name: 'walk',
+              distance: walkSpeedDistance,
+            },
+            {
+              name: 'run',
+              distance: runSpeedDistance,
+            },
+          ].sort((a, b) => a.distance - b.distance);
+          const closestSpeedDistance = speedDistances[0];
+          const spriteSpecName = closestSpeedDistance.name;
+          return spriteSpecName;
+        }
+      })();
+      spriteMegaAvatarMesh.setTexture(spriteSpecName);
+
+      // general uniforms
       [
         spriteMegaAvatarMesh?.material,
         spriteMegaAvatarMesh?.customPostMaterial,
       ].forEach(material => {
         if (material?.uniforms) {
-          const spriteAvatarMesh = spriteAvatarMeshes[0];
-          const {duration} = spriteAvatarMesh.spriteSpec;
+          const spriteSpec = spriteSpecs.find(s => s.name === spriteSpecName);
+          const {duration} = spriteSpec;
           const uTime = (timestamp/1000 % duration) / duration;
           
           material.uniforms.uTime.value = uTime;
