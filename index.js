@@ -62,6 +62,12 @@ const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
 
 const planeGeometry = new DoubleSidedPlaneGeometry(worldSize, worldSize);
+const planeWarpedGeometry = planeGeometry.clone()
+  .applyMatrix4(new THREE.Matrix4().compose(
+    new THREE.Vector3(0, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0),
+    new THREE.Quaternion(),
+    new THREE.Vector3().setScalar(spriteScaleFactor),
+  ));
 
 function mod(a, n) {
   return ((a % n) + n) % n;
@@ -637,7 +643,7 @@ export default () => {
         // polygonOffsetUnits: 1,
         // side: THREE.DoubleSide,
       });
-      const spriteAvatarMesh = new THREE.Mesh(planeGeometry, avatarSpriteMaterial);
+      const spriteAvatarMesh = new THREE.Mesh(planeWarpedGeometry, avatarSpriteMaterial);
       spriteAvatarMesh.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
         tex,
       });
@@ -1445,98 +1451,99 @@ export default () => {
         app2.parent.remove(app2);
       }
     };
-    /* for (;;) */ {
-      let canvasIndex2 = 0;
 
-      for (const spriteSpec of spriteSpecs) {
-        const {name, duration} = spriteSpec;
+    let canvasIndex2 = 0;
+    const spriteImages = [];
+    for (const spriteSpec of spriteSpecs) {
+      const {name, duration} = spriteSpec;
 
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        canvas.style = `position: fixed; top: ${canvasIndex2*1024}px; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
-        // document.body.appendChild(canvas);
-        const ctx = canvas.getContext('2d');
-        // document.body.appendChild(canvas);
-        const tex = new THREE.Texture(canvas);
-        // tex.minFilter = THREE.NearestFilter;
-        // tex.magFilter = THREE.NearestFilter;
-        // tex.flipY = true;
-        let canvasIndex = 0;
-        
-        // console.log('generate sprite', name);
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      canvas.style = `position: fixed; top: ${canvasIndex2*1024}px; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
+      // document.body.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+      // document.body.appendChild(canvas);
+      const tex = new THREE.Texture(canvas);
+      // tex.minFilter = THREE.NearestFilter;
+      // tex.magFilter = THREE.NearestFilter;
+      // tex.flipY = true;
+      let canvasIndex = 0;
+      
+      // console.log('generate sprite', name);
 
-        const timeDiff = duration * 1000 / numFrames;
-        let angleIndex = 0;
-        for (let angle = 0; angle < Math.PI*2; angle += Math.PI*2/numAngles) {
-          const spriteGenerator = spriteSpec.init({
-            angle,
-          });
-          // pre-run the animation one cycle first, to stabilize the hair physics
-          let now = 0;
-          const startAngleIndex = angleIndex;
-          for (let j = 0; j < numFrames; j++) {
-            spriteGenerator.update(now, timeDiff);
-            now += timeDiff;
-          }
-          const initialPositionOffset = localRig.inputs.hmd.position.z;
-          // now perform the real capture
-          for (let j = 0; j < numFrames; j++, angleIndex++) {
-            spriteGenerator.update(now, timeDiff);
-            now += timeDiff;
+      const timeDiff = duration * 1000 / numFrames;
+      let angleIndex = 0;
+      for (let angle = 0; angle < Math.PI*2; angle += Math.PI*2/numAngles) {
+        const spriteGenerator = spriteSpec.init({
+          angle,
+        });
+        // pre-run the animation one cycle first, to stabilize the hair physics
+        let now = 0;
+        const startAngleIndex = angleIndex;
+        for (let j = 0; j < numFrames; j++) {
+          spriteGenerator.update(now, timeDiff);
+          now += timeDiff;
+        }
+        const initialPositionOffset = localRig.inputs.hmd.position.z;
+        // now perform the real capture
+        for (let j = 0; j < numFrames; j++, angleIndex++) {
+          spriteGenerator.update(now, timeDiff);
+          now += timeDiff;
 
-            _render();
+          _render();
 
-            const positionOffset = localRig.inputs.hmd.position.z;
-            rootBone.position.set(0, 0, positionOffset - initialPositionOffset);
-            rootBone.updateMatrixWorld();
+          const positionOffset = localRig.inputs.hmd.position.z;
+          rootBone.position.set(0, 0, positionOffset - initialPositionOffset);
+          rootBone.updateMatrixWorld();
 
-            cameraMesh.position.copy(camera2.position);
-            cameraMesh.position.z -= initialPositionOffset;
-            cameraMesh.quaternion.copy(camera2.quaternion);
-            cameraMesh.updateMatrixWorld();
+          cameraMesh.position.copy(camera2.position);
+          cameraMesh.position.z -= initialPositionOffset;
+          cameraMesh.quaternion.copy(camera2.quaternion);
+          cameraMesh.updateMatrixWorld();
 
-            const frameImageBitmap = await _captureRender();
-            const x = angleIndex % numSlots;
-            const y = (angleIndex - x) / numSlots;
-            ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
-            tex.needsUpdate = true;
-            // tex2.needsUpdate = true;
+          const frameImageBitmap = await _captureRender();
+          const x = angleIndex % numSlots;
+          const y = (angleIndex - x) / numSlots;
+          ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
+          tex.needsUpdate = true;
+          // tex2.needsUpdate = true;
 
-            await _timeout(50);
-          }
-
-          const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
-            angleIndex: startAngleIndex,
-          });
-          planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
-          // planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
-          planeSpriteMesh.updateMatrixWorld();
-          planeSpriteMesh.spriteSpec = spriteSpec;
-          app.add(planeSpriteMesh);
-          planeSpriteMeshes.push(planeSpriteMesh);
-
-          spriteGenerator.cleanup && spriteGenerator.cleanup();
-
-          canvasIndex++;
+          await _timeout(50);
         }
 
-        // draw the full sprite sheet here
-        const spriteAvatarMesh = _makeSpriteAvatarMesh(tex);
-        spriteAvatarMesh.position.set(
-          -canvasIndex*worldSize,
-          worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize,
-          -canvasIndex2*worldSize,
-        );
-        spriteAvatarMesh.scale.setScalar(spriteScaleFactor);
-        // spriteAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
-        spriteAvatarMesh.updateMatrixWorld();
-        spriteAvatarMesh.spriteSpec = spriteSpec;
-        app.add(spriteAvatarMesh); 
-        spriteAvatarMeshes.push(spriteAvatarMesh);
-        
-        canvasIndex2++;
+        const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
+          angleIndex: startAngleIndex,
+        });
+        planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
+        // planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+        planeSpriteMesh.updateMatrixWorld();
+        planeSpriteMesh.spriteSpec = spriteSpec;
+        app.add(planeSpriteMesh);
+        planeSpriteMeshes.push(planeSpriteMesh);
+
+        spriteGenerator.cleanup && spriteGenerator.cleanup();
+
+        canvasIndex++;
       }
+
+      // draw the full sprite sheet here
+      const spriteAvatarMesh = _makeSpriteAvatarMesh(tex);
+      spriteAvatarMesh.position.set(
+        -canvasIndex*worldSize,
+        0,
+        -canvasIndex2*worldSize,
+      );
+      // spriteAvatarMesh.scale.setScalar(spriteScaleFactor);
+      // spriteAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+      spriteAvatarMesh.updateMatrixWorld();
+      spriteAvatarMesh.spriteSpec = spriteSpec;
+      app.add(spriteAvatarMesh); 
+      spriteAvatarMeshes.push(spriteAvatarMesh);
+      
+      canvasIndex2++;
+
+      spriteImages.push(tex);
     }
   })();
 
