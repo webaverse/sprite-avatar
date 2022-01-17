@@ -276,6 +276,7 @@ export default () => {
   const crouchIdleAnimation = animations.find(a => a.name === 'Crouch Idle.fbx');
   const crouchWalkAnimation = animations.find(a => a.name === 'Sneaking Forward.fbx');
   const narutoRunAnimation = animations.find(a => a.name === 'naruto run.fbx');
+  const jumpAnimation = animations.find(a => a.name === 'jump.fbx');
 
   const cameraGeometry = new CameraGeometry();
   const cameraMaterial = new THREE.MeshBasicMaterial({
@@ -662,8 +663,58 @@ export default () => {
             },
           };
         },
-      },
+      }, */
       {
+        name: 'jump',
+        duration: jumpAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          
+          // console.log('jump init', localPlayer.characterPhysics.velocity.toArray().join(', '));
+          // localPlayer.characterPhysics.velocity.y += 6;
+
+          let jumpTime = -200;
+          const jumpSpeed = 250;
+
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              // positionOffset -= walkSpeed/1000 * timeDiffMs;
+
+              // console.log('jump update', localPlayer.characterPhysics.velocity.toArray().join(', '));
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+
+              localRig.jumpState = true;
+              localRig.jumpTime = jumpTime;
+
+              jumpTime += timeDiffMs * jumpSpeed;
+              
+              // console.log('got jump time', jumpTime, timeDiffMs, jumpSpeed);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+            cleanup() {
+              localRig.jumpState = false;
+            },
+          };
+        },
+      },
+      /* {
         name: 'run',
         duration: runAnimation.duration,
         init({angle}) {
@@ -980,6 +1031,8 @@ export default () => {
           planeSpriteMesh.spriteSpec = spriteSpec;
           app.add(planeSpriteMesh);
           planeSpriteMeshes.push(planeSpriteMesh);
+
+          spriteGenerator.cleanup && spriteGenerator.cleanup();
 
           canvasIndex++;
         }
