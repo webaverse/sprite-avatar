@@ -43,6 +43,7 @@ const runSpeed = 9;
 const crouchSpeed = 2;
 const narutoRunSpeed = 59;
 const numSlots = size / texSize;
+const maxCrouchTime = 200; // avatars imeplementation constant
 
 const cameraHeightFactor = 0.8; // the height of the camera in avatar space
 const spriteScaleFactor = 1.15; // scale up the final sprite by this much in world space
@@ -274,6 +275,8 @@ export default () => {
   const walkBackwardAnimation = animations.find(a => a.name === 'walking backwards.fbx');
   const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
   const runBackwardAnimation = animations.find(a => a.name === 'running backwards.fbx');
+  const leftStrafeRunAnimation = animations.find(a => a.name === 'left strafe.fbx');
+  const rightStrafeRunAnimation = animations.find(a => a.name === 'right strafe.fbx');
   const idleAnimation = animations.find(a => a.name === 'idle.fbx');
   const crouchIdleAnimation = animations.find(a => a.name === 'Crouch Idle.fbx');
   const crouchWalkAnimation = animations.find(a => a.name === 'Sneaking Forward.fbx');
@@ -755,6 +758,99 @@ export default () => {
         },
       },
       {
+        name: 'run left',
+        duration: leftStrafeRunAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= runSpeed/1000 * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
+        name: 'run right',
+        duration: rightStrafeRunAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset += runSpeed/1000 * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
+        name: 'run backward',
+        duration: runBackwardAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset += runSpeed/1000 * timeDiffMs;
+              
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
         name: 'walk',
         duration: walkAnimation.duration,
         init({angle}) {
@@ -903,9 +999,13 @@ export default () => {
               }
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
-    
+
               localRig.crouchTime = 0;
+    
               localRig.update(timestamp, timeDiffMs);
+            },
+            cleanup() {
+              localRig.crouchTime = maxCrouchTime;
             },
           };
         },
@@ -935,9 +1035,13 @@ export default () => {
               }
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
-    
+
               localRig.crouchTime = 0;
+    
               localRig.update(timestamp, timeDiffMs);
+            },
+            cleanup() {
+              localRig.crouchTime = maxCrouchTime;
             },
           };
         },
@@ -967,9 +1071,13 @@ export default () => {
               }
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
-    
+
               localRig.crouchTime = 0;
+    
               localRig.update(timestamp, timeDiffMs);
+            },
+            cleanup() {
+              localRig.crouchTime = maxCrouchTime;
             },
           };
         },
@@ -1001,7 +1109,11 @@ export default () => {
               localRig.setBottomEnabled(false);
     
               localRig.crouchTime = 0;
+
               localRig.update(timestamp, timeDiffMs);
+            },
+            cleanup() {
+              localRig.crouchTime = maxCrouchTime;
             },
           };
         },
@@ -1033,7 +1145,11 @@ export default () => {
               localRig.setBottomEnabled(false);
     
               localRig.crouchTime = 0;
+
               localRig.update(timestamp, timeDiffMs);
+            },
+            cleanup() {
+              localRig.crouchTime = maxCrouchTime;
             },
           };
         },
@@ -1063,18 +1179,16 @@ export default () => {
               }
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
-    
-              // hack: reset from the last pass
-              const maxCrouchTime = 200;
-              localRig.crouchTime = maxCrouchTime;
-              
-              // this pass
+
               localRig.narutoRunState = true;
               localRig.narutoRunTime = timestamp;
 
               localRig.update(timestamp, timeDiffMs);
             },
           };
+        },
+        cleanup() {
+          localRig.narutoRunState = false;
         },
       },
     ];
