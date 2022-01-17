@@ -53,10 +53,77 @@ const spriteFootFactor = 0.07; // offset down this factor in world space
 // opacity factor for sprites
 const alphaTest = 0.9;
 
+function angleDifference(angle1, angle2) {
+  let a = angle2 - angle1;
+  a = mod(a + Math.PI, Math.PI*2) - Math.PI;
+  return a;
+}
+function getAngle(direction) {
+  localEuler.setFromRotationMatrix(
+    localMatrix.lookAt(
+      localVector.set(0, 0, 0),
+      direction,
+      localVector2.set(0, 1, 0)
+    ),
+    'YXZ'
+  );
+  return localEuler.y;
+}
+
+const animationsAngleArrays = {
+  walk: [
+    {name: 'left', angle: Math.PI/2},
+    {name: 'right', angle: -Math.PI/2},
+
+    {name: 'forward', angle: 0},
+    {name: 'backward', angle: Math.PI},
+
+    // {name: 'left strafe walking reverse.fbx', angle: Math.PI*3/4},
+    // {name: 'right strafe walking reverse.fbx', angle: -Math.PI*3/4},
+  ],
+};
+const _getPlayerSide = () => {
+  const localPlayer = useLocalPlayer();
+  
+  localEuler.setFromRotationMatrix(
+    localMatrix.lookAt(
+      localVector.set(0, 0, 0),
+      localVector2.set(0, 0, -1)
+        .applyQuaternion(localPlayer.quaternion),
+      localVector3.set(0, 1, 0)
+    ),
+    'YXZ'
+  );
+  const forwardY = localEuler.y;
+  
+  localEuler.setFromRotationMatrix(
+    localMatrix.lookAt(
+      localVector.set(0, 0, 0),
+      localVector2.copy(localPlayer.characterPhysics.velocity)
+        .normalize(),
+      localVector3.set(0, 1, 0)
+    ),
+    'YXZ'
+  );
+  const velocityY = localEuler.y;
+
+  const angle = angleDifference(forwardY, velocityY);
+  const animationAngleArray = animationsAngleArrays['walk'];
+  animationAngleArray.sort((a, b) => {
+    const aDistance = Math.abs(angleDifference(angle, a.angle));
+    const bDistance = Math.abs(angleDifference(angle, b.angle));
+    return aDistance - bDistance;
+  });
+  const closest2AnimationAngle = animationAngleArray[0];
+  // console.log('got angle', angle, closest2AnimationAngle.name);
+  return closest2AnimationAngle.name;
+};
+
 // console.log('sprite avatar index');
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
 const localVector2D = new THREE.Vector2();
 const localVector4D = new THREE.Vector4();
 const localQuaternion = new THREE.Quaternion();
@@ -878,6 +945,99 @@ export default () => {
         },
       },
       {
+        name: 'walk left',
+        duration: leftStrafeWalkingAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= walkSpeed/1000 * timeDiffMs;
+
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
+        name: 'walk right',
+        duration: rightStrafeWalkingAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset += walkSpeed/1000 * timeDiffMs;
+
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
+        name: 'walk backward',
+        duration: walkBackwardAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset += walkSpeed/1000 * timeDiffMs;
+
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
         name: 'run',
         duration: runAnimation.duration,
         init({angle}) {
@@ -1175,99 +1335,6 @@ export default () => {
               camera2.updateMatrixWorld();
               
               localRig.inputs.hmd.position.set(positionOffsetDiff, localRig.height, positionOffsetDiff);
-              localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
-    
-              localRig.update(timestamp, timeDiffMs);
-            },
-          };
-        },
-      },
-      {
-        name: 'walk left',
-        duration: leftStrafeWalkingAnimation.duration,
-        init({angle}) {
-          let positionOffset = 0;
-          return {
-            update(timestamp, timeDiff) {
-              const timeDiffMs = timeDiff/1000;
-              positionOffset -= walkSpeed/1000 * timeDiffMs;
-
-              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
-                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
-              camera2.updateMatrixWorld();
-              
-              localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
-              localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
-    
-              localRig.update(timestamp, timeDiffMs);
-            },
-          };
-        },
-      },
-      {
-        name: 'walk right',
-        duration: rightStrafeWalkingAnimation.duration,
-        init({angle}) {
-          let positionOffset = 0;
-          return {
-            update(timestamp, timeDiff) {
-              const timeDiffMs = timeDiff/1000;
-              positionOffset += walkSpeed/1000 * timeDiffMs;
-
-              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
-                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
-              camera2.updateMatrixWorld();
-              
-              localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
-              localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
-    
-              localRig.update(timestamp, timeDiffMs);
-            },
-          };
-        },
-      },
-      {
-        name: 'walk backward',
-        duration: walkBackwardAnimation.duration,
-        init({angle}) {
-          let positionOffset = 0;
-          return {
-            update(timestamp, timeDiff) {
-              const timeDiffMs = timeDiff/1000;
-              positionOffset += walkSpeed/1000 * timeDiffMs;
-
-              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
-              camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
-                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
-              camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
-              camera2.updateMatrixWorld();
-              
-              localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
               
               for (let h = 0; h < 2; h++) {
@@ -1814,8 +1881,25 @@ export default () => {
             },
           ].sort((a, b) => a.distance - b.distance);
           const closestSpeedDistance = speedDistances[0];
-          const spriteSpecName = closestSpeedDistance.name;
-          return spriteSpecName;
+          const spriteSpecBaseName = closestSpeedDistance.name;
+          const playerSide = _getPlayerSide();
+          if (spriteSpecBaseName === 'idle') {
+            return 'idle';
+          } else if (spriteSpecBaseName === 'walk') {
+            if (playerSide === 'forward') {
+              return 'walk';
+            } else if (playerSide === 'backward') {
+              return 'walk backward';
+            } else if (playerSide === 'left') {
+              return 'walk left';
+            } else if (playerSide === 'right') {
+              return 'walk right';
+            }
+          } else if (spriteSpecBaseName === 'run') {
+            return 'run';
+          }
+
+          throw new Error('unhandled case');
         }
       })();
       spriteMegaAvatarMesh.setTexture(spriteSpecName);
@@ -1832,6 +1916,18 @@ export default () => {
           
           material.uniforms.uTime.value = uTime;
           material.uniforms.uTime.needsUpdate = true;
+
+          localQuaternion
+            .setFromRotationMatrix(
+              localMatrix.lookAt(
+                spriteMegaAvatarMesh.getWorldPosition(localVector),
+                camera.position,
+                localVector2.set(0, 1, 0)
+              )
+            )
+          localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+          localEuler.x = 0;
+          localEuler.z = 0;
 
           localEuler2.setFromQuaternion(localPlayer.quaternion, 'YXZ');
           localEuler2.x = 0;
