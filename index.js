@@ -1394,7 +1394,7 @@ export default () => {
         },
       },
     ];
-    window.spriteSpecs = spriteSpecs;
+    // window.spriteSpecs = spriteSpecs;
     /* const _captureCanvas = (canvas, sx, sy, sw, sh, options) => new Promise((accept, reject) => {
       canvas.toBlob(blob => {
         const img = new Image();
@@ -1409,7 +1409,7 @@ export default () => {
         img.src = u;
       }, 'image/png');
     }); */
-    const pixelRatio = window.devicePixelRatio;
+    const pixelRatio = renderer.getPixelRatio();
     const _captureRender = () => createImageBitmap(canvas, 0, canvas.height - texSize, texSize, texSize);
     const _render = () => {
       const oldParent = app2.parent;
