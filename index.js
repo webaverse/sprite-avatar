@@ -658,7 +658,7 @@ export default () => {
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
     
-              localRig.update(timestamp, timeDiffMs, 100);
+              localRig.update(timestamp, timeDiffMs);
             },
           };
         },
@@ -688,7 +688,7 @@ export default () => {
               localRig.setTopEnabled(false);
               localRig.setBottomEnabled(false);
     
-              localRig.update(timestamp, timeDiffMs, 100);
+              localRig.update(timestamp, timeDiffMs);
             },
           };
         },
@@ -720,7 +720,7 @@ export default () => {
               localRig.setBottomEnabled(false);
     
               localRig.crouchTime = 0;
-              localRig.update(timestamp, timeDiffMs, 100);
+              localRig.update(timestamp, timeDiffMs);
             },
           };
         },
@@ -759,7 +759,7 @@ export default () => {
               localRig.narutoRunState = true;
               localRig.narutoRunTime = timestamp;
 
-              localRig.update(timestamp, timeDiffMs, 100);
+              localRig.update(timestamp, timeDiffMs);
             },
           };
         },
