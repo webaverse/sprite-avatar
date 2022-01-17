@@ -33,22 +33,24 @@ class DoubleSidedPlaneGeometry extends THREE.BufferGeometry {
 
 const size = 4096;
 const texSize = 512;
+const numSlots = size / texSize;
 const numFrames = 7;
-// const numFrames = 20;
 const numAngles = 8;
 const worldSize = 2;
-const distance = 2.2;
+const distance = 2.2; // render distance
+
+// avatar animation constants
 const walkSpeed = 3;
 const runSpeed = 9;
 const crouchSpeed = 2;
 const narutoRunSpeed = 59;
-const numSlots = size / texSize;
-const maxCrouchTime = 200; // avatars imeplementation constant
+const maxCrouchTime = 200;
 
 const cameraHeightFactor = 0.8; // the height of the camera in avatar space
-const spriteScaleFactor = 1.15; // scale up the final sprite by this much in world space
-const spriteFootFactor = 0.1; // offset down this factor in world space
+const spriteScaleFactor = 1.2; // scale up the final sprite by this much in world space
+const spriteFootFactor = 0.07; // offset down this factor in world space
 
+// opacity factor for sprites
 const alphaTest = 0.9;
 
 // console.log('sprite avatar index');
@@ -59,18 +61,21 @@ const localVector2D = new THREE.Vector2();
 const localVector4D = new THREE.Vector4();
 const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
+const localEuler2 = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
+
+// const y180Quaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 
 const planeGeometry = new DoubleSidedPlaneGeometry(worldSize, worldSize);
 const planeWarpedGeometry = planeGeometry.clone()
   .applyMatrix4(new THREE.Matrix4().compose(
-    new THREE.Vector3(0, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0),
+    new THREE.Vector3(0, worldSize/2 + (spriteScaleFactor-1)/2*worldSize - spriteFootFactor*worldSize, 0),
     new THREE.Quaternion(),
     new THREE.Vector3().setScalar(spriteScaleFactor),
   ));
 const planeWarpedGeometry2 = planeGeometry.clone()
   .applyMatrix4(new THREE.Matrix4().compose(
-    new THREE.Vector3(0, (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0),
+    new THREE.Vector3(0, worldSize/2 + (spriteScaleFactor-1)/2*worldSize - spriteFootFactor*worldSize, 0),
     new THREE.Quaternion(),
     new THREE.Vector3().setScalar(spriteScaleFactor),
   ));
@@ -316,7 +321,7 @@ export default () => {
   const planeSpriteMeshes = [];
   const spriteAvatarMeshes = [];
   let spriteMegaAvatarMesh = null;
-  // let tex;
+  let localRig = null;
   (async () => {
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
     const m = await metaversefile.import(vrmUrl);
@@ -350,7 +355,7 @@ export default () => {
     
     const {skinnedVrm} = app2;
     // console.log('got app', skinnedVrm);
-    const localRig = createAvatar(skinnedVrm, {
+    localRig = createAvatar(skinnedVrm, {
       fingers: true,
       hair: true,
       visemes: true,
@@ -824,7 +829,7 @@ export default () => {
           };
         },
       },
-      {
+      /* {
         name: 'jump',
         duration: jumpAnimation.duration,
         init({angle}) {
@@ -1540,7 +1545,7 @@ export default () => {
         cleanup() {
           localRig.narutoRunState = false;
         },
-      },
+      }, */
     ];
     // window.spriteSpecs = spriteSpecs;
     /* const _captureCanvas = (canvas, sx, sy, sw, sh, options) => new Promise((accept, reject) => {
@@ -1732,37 +1737,57 @@ export default () => {
         spriteAvatarMesh.quaternion.setFromEuler(localEuler);
         spriteAvatarMesh.updateMatrixWorld();
       }
-      if (spriteMegaAvatarMesh) {
-        spriteMegaAvatarMesh.position.copy(localPlayer.position);
-
-        localQuaternion
-          .setFromRotationMatrix(
-            localMatrix.lookAt(
-              spriteMegaAvatarMesh.getWorldPosition(localVector),
-              camera.position,
-              localVector2.set(0, 1, 0)
-            )
-          )
-          // .premultiply(app.quaternion.clone().invert());
-        localEuler.setFromQuaternion(localQuaternion, 'YXZ');
-        localEuler.x = 0;
-        localEuler.z = 0;
-
-        spriteMegaAvatarMesh.quaternion.setFromEuler(localEuler);
-        spriteMegaAvatarMesh.updateMatrixWorld();
-      }
 
       [
         spriteAvatarMesh.material,
         spriteAvatarMesh.customPostMaterial,
-        spriteMegaAvatarMesh?.material,
-        spriteMegaAvatarMesh?.customPostMaterial,
       ].forEach(material => {
         if (material?.uniforms) {
           material.uniforms.uTime.value = uTime;
           material.uniforms.uTime.needsUpdate = true;
 
           material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+          material.uniforms.uY.needsUpdate = true;
+        }
+      });
+    }
+    if (spriteMegaAvatarMesh) {
+      spriteMegaAvatarMesh.position.copy(localPlayer.position);
+      spriteMegaAvatarMesh.position.y -= localRig.height;
+
+      localQuaternion
+        .setFromRotationMatrix(
+          localMatrix.lookAt(
+            spriteMegaAvatarMesh.getWorldPosition(localVector),
+            camera.position,
+            localVector2.set(0, 1, 0)
+          )
+        )
+        // .multiply(y180Quaternion);
+      localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+      localEuler.x = 0;
+      localEuler.z = 0;
+
+      spriteMegaAvatarMesh.quaternion.setFromEuler(localEuler);
+      spriteMegaAvatarMesh.updateMatrixWorld();
+
+      [
+        spriteMegaAvatarMesh?.material,
+        spriteMegaAvatarMesh?.customPostMaterial,
+      ].forEach(material => {
+        if (material?.uniforms) {
+          const spriteAvatarMesh = spriteAvatarMeshes[0];
+          const {duration} = spriteAvatarMesh.spriteSpec;
+          const uTime = (timestamp/1000 % duration) / duration;
+          
+          material.uniforms.uTime.value = uTime;
+          material.uniforms.uTime.needsUpdate = true;
+
+          localEuler2.setFromQuaternion(localPlayer.quaternion, 'YXZ');
+          localEuler2.x = 0;
+          localEuler2.z = 0;
+
+          material.uniforms.uY.value = mod(localEuler.y - localEuler2.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
           material.uniforms.uY.needsUpdate = true;
         }
       });
