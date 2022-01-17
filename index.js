@@ -800,6 +800,12 @@ export default () => {
         if (tex) {
           avatarMegaSpriteMaterial.uniforms.uTex.value = tex;
           avatarMegaSpriteMaterial.uniforms.uTex.needsUpdate = true;
+
+          if (spriteMegaAvatarMesh.customPostMaterial.uniforms) {
+            spriteMegaAvatarMesh.customPostMaterial.uniforms.uTex.value = tex;
+            spriteMegaAvatarMesh.customPostMaterial.uniforms.uTex.needsUpdate = true;
+          }
+          
           return true;
         } else {
           return false;
