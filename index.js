@@ -31,10 +31,10 @@ class DoubleSidedPlaneGeometry extends THREE.BufferGeometry {
   }
 }
 
-const size = 4096 * 2;
+const size = 4096;
 const texSize = 512;
-// const numFrames = 7;
-const numFrames = 20;
+const numFrames = 7;
+// const numFrames = 20;
 const numAngles = 8;
 const worldSize = 2;
 const distance = 2.2;
