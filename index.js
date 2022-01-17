@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 // import easing from './easing.js';
 import metaversefile from 'metaversefile';
-const {useApp, useFrame, usePhysics, useMaterials, createAvatar, useAvatarAnimations, useInternals, useCleanup} = metaversefile;
+const {useApp, useFrame, useLocalPlayer, usePhysics, useMaterials, createAvatar, useAvatarAnimations, useInternals, useCleanup} = metaversefile;
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 // const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
@@ -65,6 +65,12 @@ const planeGeometry = new DoubleSidedPlaneGeometry(worldSize, worldSize);
 const planeWarpedGeometry = planeGeometry.clone()
   .applyMatrix4(new THREE.Matrix4().compose(
     new THREE.Vector3(0, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0),
+    new THREE.Quaternion(),
+    new THREE.Vector3().setScalar(spriteScaleFactor),
+  ));
+const planeWarpedGeometry2 = planeGeometry.clone()
+  .applyMatrix4(new THREE.Matrix4().compose(
+    new THREE.Vector3(0, (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0),
     new THREE.Quaternion(),
     new THREE.Vector3().setScalar(spriteScaleFactor),
   ));
@@ -273,6 +279,7 @@ class AvatarSpriteDepthMaterial extends THREE.MeshNormalMaterial {
 
 export default () => {
   const app = useApp();
+  const localPlayer = useLocalPlayer();
   const {WebaverseShaderMaterial} = useMaterials();
   const {renderer, scene, camera} = useInternals();
   
@@ -294,7 +301,7 @@ export default () => {
   const crouchWalkLeftAnimation = animations.find(a => a.name === 'Crouched Sneaking Left.fbx');
   const crouchWalkRightAnimation = animations.find(a => a.name === 'Crouched Sneaking Right.fbx');
 
-  window.animations = animations;
+  // window.animations = animations;
 
   const cameraGeometry = new CameraGeometry();
   const cameraMaterial = new THREE.MeshBasicMaterial({
@@ -308,6 +315,7 @@ export default () => {
   
   const planeSpriteMeshes = [];
   const spriteAvatarMeshes = [];
+  let spriteMegaAvatarMesh = null;
   // let tex;
   (async () => {
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
@@ -648,6 +656,140 @@ export default () => {
         tex,
       });
       return spriteAvatarMesh;
+    };
+    const _makeSpriteMegaAvatarMesh = (rig, texs) => {
+      const tex = texs[0];
+      const avatarSpriteMaterial = new WebaverseShaderMaterial({
+        uniforms: {
+          uTex: {
+            type: 't',
+            value: tex,
+            // needsUpdate: true,
+          },
+          uTime: {
+            type: 'f',
+            value: 0,
+            needsUpdate: true,
+          },
+          uY: {
+            type: 'f',
+            value: 0,
+            needsUpdate: true,
+          },
+        },
+        vertexShader: `\
+          precision highp float;
+          precision highp int;
+
+          uniform vec4 uSelectRange;
+
+          // attribute vec3 barycentric;
+          attribute float ao;
+          attribute float skyLight;
+          attribute float torchLight;
+
+          // varying vec3 vViewPosition;
+          varying vec2 vUv;
+          varying vec3 vBarycentric;
+          varying float vAo;
+          varying float vSkyLight;
+          varying float vTorchLight;
+          varying vec3 vSelectColor;
+          varying vec2 vWorldUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
+
+          void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+
+            // vViewPosition = -mvPosition.xyz;
+            vUv = uv;
+          }
+        `,
+        fragmentShader: `\
+          precision highp float;
+          precision highp int;
+
+          #define PI 3.1415926535897932384626433832795
+
+          // uniform float sunIntensity;
+          uniform sampler2D uTex;
+          // uniform vec3 uColor;
+          uniform float uTime;
+          uniform float uY;
+          // uniform vec3 sunDirection;
+          // uniform float distanceOffset;
+          float parallaxScale = 0.3;
+          float parallaxMinLayers = 50.;
+          float parallaxMaxLayers = 50.;
+
+          // varying vec3 vViewPosition;
+          varying vec2 vUv;
+          varying vec3 vBarycentric;
+          varying float vAo;
+          varying float vSkyLight;
+          varying float vTorchLight;
+          varying vec3 vSelectColor;
+          varying vec2 vWorldUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
+
+          float edgeFactor(vec2 uv) {
+            float divisor = 0.5;
+            float power = 0.5;
+            return min(
+              pow(abs(uv.x - round(uv.x/divisor)*divisor), power),
+              pow(abs(uv.y - round(uv.y/divisor)*divisor), power)
+            ) > 0.1 ? 0.0 : 1.0;
+            /* return 1. - pow(abs(uv.x - round(uv.x/divisor)*divisor), power) *
+              pow(abs(uv.y - round(uv.y/divisor)*divisor), power); */
+          }
+
+          vec3 getTriPlanarBlend(vec3 _wNorm){
+            // in wNorm is the world-space normal of the fragment
+            vec3 blending = abs( _wNorm );
+            // blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
+            // float b = (blending.x + blending.y + blending.z);
+            // blending /= vec3(b, b, b);
+            // return min(min(blending.x, blending.y), blending.z);
+            blending = normalize(blending);
+            return blending;
+          }
+
+          void main() {
+            float angleIndex = floor(uY * ${numAngles.toFixed(8)});
+            float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
+            float i = animationIndex + angleIndex * ${numFrames.toFixed(8)};
+            float x = mod(i, ${numSlots.toFixed(8)});
+            float y = (i - x) / ${numSlots.toFixed(8)};
+            
+            gl_FragColor = texture(
+              uTex,
+              vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
+                vec2(x, -y)/${numSlots.toFixed(8)} +
+                vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
+            );
+            // gl_FragColor.r = 1.;
+            // gl_FragColor.a = 1.;
+            if (gl_FragColor.a < ${alphaTest}) {
+              discard;
+            }
+            gl_FragColor.a = 1.;
+          }
+        `,
+        transparent: true,
+        // depthWrite: false,
+        // polygonOffset: true,
+        // polygonOffsetFactor: -2,
+        // polygonOffsetUnits: 1,
+        // side: THREE.DoubleSide,
+      });
+      const spriteMegaAvatarMesh = new THREE.Mesh(planeWarpedGeometry2, avatarSpriteMaterial);
+      spriteMegaAvatarMesh.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
+        tex,
+      });
+      return spriteMegaAvatarMesh;
     };
 
     const spriteSpecs = [
@@ -1465,6 +1607,7 @@ export default () => {
       const ctx = canvas.getContext('2d');
       // document.body.appendChild(canvas);
       const tex = new THREE.Texture(canvas);
+      tex.name = name;
       // tex.minFilter = THREE.NearestFilter;
       // tex.magFilter = THREE.NearestFilter;
       // tex.flipY = true;
@@ -1545,6 +1688,13 @@ export default () => {
 
       spriteImages.push(tex);
     }
+
+    spriteMegaAvatarMesh = _makeSpriteMegaAvatarMesh(localRig, spriteImages);
+    // spriteMegaAvatarMesh.position.set(0, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0);
+    // spriteMegaAvatarMesh.scale.setScalar(spriteScaleFactor);
+    // spriteMegaAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+    spriteMegaAvatarMesh.updateMatrixWorld();
+    scene.add(spriteMegaAvatarMesh);
   })();
 
   useFrame(({timestamp, timeDiff}) => {
@@ -1566,22 +1716,48 @@ export default () => {
       const {duration} = spriteAvatarMesh.spriteSpec;
       const uTime = (timestamp/1000 % duration) / duration;
 
-      localQuaternion
-        .setFromRotationMatrix(
-          localMatrix.lookAt(
-            spriteAvatarMesh.getWorldPosition(localVector),
-            camera.position,
-            localVector2.set(0, 1, 0)
+      {
+        localQuaternion
+          .setFromRotationMatrix(
+            localMatrix.lookAt(
+              spriteAvatarMesh.getWorldPosition(localVector),
+              camera.position,
+              localVector2.set(0, 1, 0)
+            )
           )
-        )
-        .premultiply(app.quaternion.clone().invert());
-      localEuler.setFromQuaternion(localQuaternion, 'YXZ');
-      localEuler.x = 0;
-      localEuler.z = 0;
-      spriteAvatarMesh.quaternion.setFromEuler(localEuler);
-      spriteAvatarMesh.updateMatrixWorld();
+          .premultiply(app.quaternion.clone().invert());
+        localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+        localEuler.x = 0;
+        localEuler.z = 0;
+        spriteAvatarMesh.quaternion.setFromEuler(localEuler);
+        spriteAvatarMesh.updateMatrixWorld();
+      }
+      if (spriteMegaAvatarMesh) {
+        spriteMegaAvatarMesh.position.copy(localPlayer.position);
 
-      [spriteAvatarMesh.material, spriteAvatarMesh.customPostMaterial].forEach(material => {
+        localQuaternion
+          .setFromRotationMatrix(
+            localMatrix.lookAt(
+              spriteMegaAvatarMesh.getWorldPosition(localVector),
+              camera.position,
+              localVector2.set(0, 1, 0)
+            )
+          )
+          // .premultiply(app.quaternion.clone().invert());
+        localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+        localEuler.x = 0;
+        localEuler.z = 0;
+
+        spriteMegaAvatarMesh.quaternion.setFromEuler(localEuler);
+        spriteMegaAvatarMesh.updateMatrixWorld();
+      }
+
+      [
+        spriteAvatarMesh.material,
+        spriteAvatarMesh.customPostMaterial,
+        spriteMegaAvatarMesh?.material,
+        spriteMegaAvatarMesh?.customPostMaterial,
+      ].forEach(material => {
         if (material?.uniforms) {
           material.uniforms.uTime.value = uTime;
           material.uniforms.uTime.needsUpdate = true;
