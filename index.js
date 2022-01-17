@@ -705,6 +705,37 @@ export default () => {
               positionOffset -= walkSpeed/1000 * timeDiffMs;
 
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
+              camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
+                .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
+              camera2.updateMatrixWorld();
+              camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
+              camera2.updateMatrixWorld();
+              
+              localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
+              localRig.inputs.hmd.updateMatrixWorld();
+              
+              for (let h = 0; h < 2; h++) {
+                localRig.setHandEnabled(h, false);
+              }
+              localRig.setTopEnabled(false);
+              localRig.setBottomEnabled(false);
+    
+              localRig.update(timestamp, timeDiffMs);
+            },
+          };
+        },
+      },
+      {
+        name: 'walk left',
+        duration: walkAnimation.duration,
+        init({angle}) {
+          let positionOffset = 0;
+          return {
+            update(timestamp, timeDiff) {
+              const timeDiffMs = timeDiff/1000;
+              positionOffset -= walkSpeed/1000 * timeDiffMs;
+
+              const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
               camera2.updateMatrixWorld();
