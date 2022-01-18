@@ -1,25 +1,12 @@
 import * as THREE from 'three';
-// import easing from './easing.js';
 import metaversefile from 'metaversefile';
-const {useApp, useFrame, useLocalPlayer, useInternals, useGeometries, useAvatarSpriter} = metaversefile;
-// import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+const {useApp, useFrame, useLocalPlayer, useInternals, useAvatarSpriter} = metaversefile;
 
 export default () => {
   const app = useApp();
   const localPlayer = useLocalPlayer();
   const {scene, camera} = useInternals();
-  const {CameraGeometry} = useGeometries();
   const {createSpriteMegaMesh} = useAvatarSpriter();
-
-  const cameraGeometry = new CameraGeometry();
-  const cameraMaterial = new THREE.MeshBasicMaterial({
-    color: 0x333333,
-  });
-  const cameraMesh = new THREE.Mesh(
-    cameraGeometry,
-    cameraMaterial,
-  );
-  scene.add(cameraMesh);
   
   let spriteMegaAvatarMesh = null;
   (async () => {
