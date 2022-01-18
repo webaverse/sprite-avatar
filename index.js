@@ -1766,12 +1766,10 @@ export default () => {
         });
       }
     }
-    if (spriteMegaAvatarMesh) {
-      spriteMegaAvatarMesh.update(timestamp, timeDiff, {
-        player: localPlayer,
-        camera,
-      });
-    }
+    spriteMegaAvatarMesh && spriteMegaAvatarMesh.update(timestamp, timeDiff, {
+      player: localPlayer,
+      camera,
+    });
   });
   
   return app;
