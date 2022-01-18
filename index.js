@@ -1502,12 +1502,12 @@ export default () => {
       }, 'image/png');
     }); */
     const pixelRatio = renderer.getPixelRatio();
-    let captureIndex = 0;
+    // let captureIndex = 0;
     const _captureRender = () => {
       const canvas2 = document.createElement('canvas');
       canvas2.width = texSize;
       canvas2.height = texSize;
-      const size2 = 256;
+      /* const size2 = 256;
       canvas2.style.cssText = `\
         position: absolute;
         top: ${captureIndex*size2}px;
@@ -1515,12 +1515,12 @@ export default () => {
         width: ${size2}px;
         height: ${size2}px;
         z-index: 10;
-      `;
+      `; */
       const ctx2 = canvas2.getContext('2d');
       // console.log('got renderer dom element', renderer.domElement);
       ctx2.drawImage(renderer.domElement, 0, renderer.domElement.height - texSize, texSize, texSize, 0, 0, texSize, texSize);
 
-      captureIndex++;
+      // captureIndex++;
       // createImageBitmap(renderer.domElement, 0, renderer.domElement.height - texSize, texSize, texSize);
 
       return canvas2;
