@@ -635,6 +635,9 @@ class SpriteMegaAvatarMesh extends THREE.Mesh {
   }
 }
 
+function mod(a, n) {
+  return ((a % n) + n) % n;
+}
 function angleDifference(angle1, angle2) {
   let a = angle2 - angle1;
   a = mod(a + Math.PI, Math.PI*2) - Math.PI;
@@ -1322,13 +1325,6 @@ const spriteSpecs = [
     },
   }, */
 ];
-
-function mod(a, n) {
-  return ((a % n) + n) % n;
-}
-/* const _timeout = (t = 1000) => new Promise((accept, reject) => {
-  setTimeout(accept, t);
-}); */
 
 class CameraGeometry extends THREE.BufferGeometry {
   constructor() {
