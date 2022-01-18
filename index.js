@@ -1952,9 +1952,6 @@ export default () => {
       ].forEach(material => {
         if (material?.uniforms) {
           const spriteSpec = spriteSpecs.find(s => s.name === spriteSpecName);
-          if (!spriteSpec) {
-            debugger;
-          }
           const {duration} = spriteSpec;
           const uTime = (timestamp/1000 % duration) / duration;
           
