@@ -1346,6 +1346,9 @@ export default () => {
         duration: narutoRunAnimation.duration,
         init({angle}) {
           let positionOffset = 0;
+          let narutoRunTime = 0;
+          const narutoRunIncrementSpeed = 1000;
+
           return {
             update(timestamp, timeDiff) {
               const timeDiffMs = timeDiff/1000;
@@ -1368,7 +1371,9 @@ export default () => {
               localRig.setBottomEnabled(false);
 
               localRig.narutoRunState = true;
-              localRig.narutoRunTime = timestamp;
+              localRig.narutoRunTime = narutoRunTime;
+
+              narutoRunTime += timeDiffMs * narutoRunIncrementSpeed;
 
               localRig.update(timestamp, timeDiffMs);
             },
