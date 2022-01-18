@@ -60,30 +60,13 @@ function angleDifference(angle1, angle2) {
   a = mod(a + Math.PI, Math.PI*2) - Math.PI;
   return a;
 }
-function getAngle(direction) {
-  localEuler.setFromRotationMatrix(
-    localMatrix.lookAt(
-      localVector.set(0, 0, 0),
-      direction,
-      localVector2.set(0, 1, 0)
-    ),
-    'YXZ'
-  );
-  return localEuler.y;
-}
+const animationAngles = [
+  {name: 'left', angle: Math.PI/2},
+  {name: 'right', angle: -Math.PI/2},
 
-const animationsAngleArrays = {
-  walk: [
-    {name: 'left', angle: Math.PI/2},
-    {name: 'right', angle: -Math.PI/2},
-
-    {name: 'forward', angle: 0},
-    {name: 'backward', angle: Math.PI},
-
-    // {name: 'left strafe walking reverse.fbx', angle: Math.PI*3/4},
-    // {name: 'right strafe walking reverse.fbx', angle: -Math.PI*3/4},
-  ],
-};
+  {name: 'forward', angle: 0},
+  {name: 'backward', angle: Math.PI},
+];
 const _getPlayerSide = () => {
   const localPlayer = useLocalPlayer();
   
@@ -110,13 +93,12 @@ const _getPlayerSide = () => {
   const velocityY = localEuler.y;
 
   const angle = angleDifference(forwardY, velocityY);
-  const animationAngleArray = animationsAngleArrays['walk'];
-  animationAngleArray.sort((a, b) => {
+  animationAngles.sort((a, b) => {
     const aDistance = Math.abs(angleDifference(angle, a.angle));
     const bDistance = Math.abs(angleDifference(angle, b.angle));
     return aDistance - bDistance;
   });
-  const closest2AnimationAngle = animationAngleArray[0];
+  const closest2AnimationAngle = animationAngles[0];
   // console.log('got angle', angle, closest2AnimationAngle.name);
   return closest2AnimationAngle.name;
 };
@@ -152,9 +134,9 @@ const planeWarpedGeometry2 = planeGeometry.clone()
 function mod(a, n) {
   return ((a % n) + n) % n;
 }
-const _timeout = (t = 1000) => new Promise((accept, reject) => {
+/* const _timeout = (t = 1000) => new Promise((accept, reject) => {
   setTimeout(accept, t);
-});
+}); */
 
 class CameraGeometry extends THREE.BufferGeometry {
   constructor() {
