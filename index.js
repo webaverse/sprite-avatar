@@ -1347,7 +1347,7 @@ export default () => {
         init({angle}) {
           let positionOffset = 0;
           let narutoRunTime = 0;
-          const narutoRunIncrementSpeed = 1000;
+          const narutoRunIncrementSpeed = 1000 * 4;
 
           return {
             update(timestamp, timeDiff) {
