@@ -6,6 +6,8 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 
 // const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
+const preview = false; // whether to draw debug meshes
+
 class DoubleSidedPlaneGeometry extends THREE.BufferGeometry {
   constructor(width, height, widthSegments, heightSegments) {
     super();
@@ -1547,21 +1549,21 @@ export default () => {
 
     let canvasIndex2 = 0;
     const spriteImages = [];
+    // console.time('render');
     for (const spriteSpec of spriteSpecs) {
       const {name, duration} = spriteSpec;
+
+      // console.log('spritesheet', name);
 
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = size;
-      canvas.style = `position: fixed; top: ${canvasIndex2*1024}px; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
-      // document.body.appendChild(canvas);
+      // canvas.style.cssText = `position: fixed; top: ${canvasIndex2*1024}px; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
       const ctx = canvas.getContext('2d');
-      // document.body.appendChild(canvas);
       const tex = new THREE.Texture(canvas);
       tex.name = name;
       // tex.minFilter = THREE.NearestFilter;
       // tex.magFilter = THREE.NearestFilter;
-      // tex.flipY = true;
       let canvasIndex = 0;
       
       // console.log('generate sprite', name);
@@ -1569,6 +1571,8 @@ export default () => {
       const timeDiff = duration * 1000 / numFrames;
       let angleIndex = 0;
       for (let angle = 0; angle < Math.PI*2; angle += Math.PI*2/numAngles) {
+        // console.log('angle', angle/(Math.PI*2)*360);
+
         const spriteGenerator = spriteSpec.init({
           angle,
         });
@@ -1587,14 +1591,16 @@ export default () => {
 
           _render();
 
-          const positionOffset = localRig.inputs.hmd.position.z;
-          rootBone.position.set(0, 0, positionOffset - initialPositionOffset);
-          rootBone.updateMatrixWorld();
+          if (preview) {
+            const positionOffset = localRig.inputs.hmd.position.z;
+            rootBone.position.set(0, 0, positionOffset - initialPositionOffset);
+            rootBone.updateMatrixWorld();
 
-          cameraMesh.position.copy(camera2.position);
-          cameraMesh.position.z -= initialPositionOffset;
-          cameraMesh.quaternion.copy(camera2.quaternion);
-          cameraMesh.updateMatrixWorld();
+            cameraMesh.position.copy(camera2.position);
+            cameraMesh.position.z -= initialPositionOffset;
+            cameraMesh.quaternion.copy(camera2.quaternion);
+            cameraMesh.updateMatrixWorld();
+          }
 
           // const frameImageBitmap = _captureRender();
           const x = angleIndex % numSlots;
@@ -1608,42 +1614,43 @@ export default () => {
           tex.needsUpdate = true;
           // tex2.needsUpdate = true;
 
-          await _timeout(50);
+          // await _timeout(50);
         }
 
-        const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
-          angleIndex: startAngleIndex,
-        });
-        planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
-        // planeSpriteMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
-        planeSpriteMesh.updateMatrixWorld();
-        planeSpriteMesh.spriteSpec = spriteSpec;
-        app.add(planeSpriteMesh);
-        planeSpriteMeshes.push(planeSpriteMesh);
+        if (preview) {
+          const planeSpriteMesh = _makeSpritePlaneMesh(tex, {
+            angleIndex: startAngleIndex,
+          });
+          planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
+          planeSpriteMesh.updateMatrixWorld();
+          planeSpriteMesh.spriteSpec = spriteSpec;
+          app.add(planeSpriteMesh);
+          planeSpriteMeshes.push(planeSpriteMesh);
+        }
 
         spriteGenerator.cleanup && spriteGenerator.cleanup();
 
         canvasIndex++;
       }
 
-      // draw the full sprite sheet here
-      const spriteAvatarMesh = _makeSpriteAvatarMesh(tex);
-      spriteAvatarMesh.position.set(
-        -canvasIndex*worldSize,
-        0,
-        -canvasIndex2*worldSize,
-      );
-      // spriteAvatarMesh.scale.setScalar(spriteScaleFactor);
-      // spriteAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
-      spriteAvatarMesh.updateMatrixWorld();
-      spriteAvatarMesh.spriteSpec = spriteSpec;
-      app.add(spriteAvatarMesh); 
-      spriteAvatarMeshes.push(spriteAvatarMesh);
+      if (preview) {
+        const spriteAvatarMesh = _makeSpriteAvatarMesh(tex);
+        spriteAvatarMesh.position.set(
+          -canvasIndex*worldSize,
+          0,
+          -canvasIndex2*worldSize,
+        );
+        spriteAvatarMesh.updateMatrixWorld();
+        spriteAvatarMesh.spriteSpec = spriteSpec;
+        app.add(spriteAvatarMesh); 
+        spriteAvatarMeshes.push(spriteAvatarMesh);
+      }
       
       canvasIndex2++;
 
       spriteImages.push(tex);
     }
+    // console.timeEnd('render');
 
     spriteMegaAvatarMesh = _makeSpriteMegaAvatarMesh(localRig, spriteImages);
     // spriteMegaAvatarMesh.position.set(0, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0);
