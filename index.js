@@ -718,7 +718,7 @@ export default () => {
       });
       return spriteAvatarMesh;
     };
-    const _makeSpriteMegaAvatarMesh = (rig, texs) => {
+    const _makeSpriteMegaAvatarMesh = texs => {
       const tex = texs[0];
       const avatarMegaSpriteMaterial = new WebaverseShaderMaterial({
         uniforms: {
@@ -1634,7 +1634,7 @@ export default () => {
     }
     // console.timeEnd('render');
 
-    spriteMegaAvatarMesh = _makeSpriteMegaAvatarMesh(localRig, spriteImages);
+    spriteMegaAvatarMesh = _makeSpriteMegaAvatarMesh(spriteImages);
     // spriteMegaAvatarMesh.position.set(0, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0);
     // spriteMegaAvatarMesh.scale.setScalar(spriteScaleFactor);
     // spriteMegaAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
