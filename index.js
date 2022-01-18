@@ -1502,7 +1502,29 @@ export default () => {
       }, 'image/png');
     }); */
     const pixelRatio = renderer.getPixelRatio();
-    const _captureRender = () => createImageBitmap(renderer.domElement, 0, renderer.domElement.height - texSize, texSize, texSize);
+    let captureIndex = 0;
+    const _captureRender = () => {
+      const canvas2 = document.createElement('canvas');
+      canvas2.width = texSize;
+      canvas2.height = texSize;
+      const size2 = 256;
+      canvas2.style.cssText = `\
+        position: absolute;
+        top: ${captureIndex*size2}px;
+        left: 0;
+        width: ${size2}px;
+        height: ${size2}px;
+        z-index: 10;
+      `;
+      const ctx2 = canvas2.getContext('2d');
+      // console.log('got renderer dom element', renderer.domElement);
+      ctx2.drawImage(renderer.domElement, 0, renderer.domElement.height - texSize, texSize, texSize, 0, 0, texSize, texSize);
+
+      captureIndex++;
+      // createImageBitmap(renderer.domElement, 0, renderer.domElement.height - texSize, texSize, texSize);
+
+      return canvas2;
+    };
     const _render = () => {
       const oldParent = app2.parent;
       scene2.add(app2);
@@ -1589,7 +1611,7 @@ export default () => {
           cameraMesh.quaternion.copy(camera2.quaternion);
           cameraMesh.updateMatrixWorld();
 
-          const frameImageBitmap = await _captureRender();
+          const frameImageBitmap = _captureRender();
           const x = angleIndex % numSlots;
           const y = (angleIndex - x) / numSlots;
           ctx.drawImage(frameImageBitmap, x * texSize, y * texSize);
