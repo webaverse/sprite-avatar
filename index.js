@@ -429,7 +429,11 @@ export default () => {
       visemes: true,
       debug: false,
     });
-    
+    for (let h = 0; h < 2; h++) {
+      localRig.setHandEnabled(h, false);
+    }
+    localRig.setTopEnabled(false);
+    localRig.setBottomEnabled(false);
     localRig.emotes.push({
       index: 2,
       value: 1,
@@ -900,12 +904,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -930,12 +928,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -960,12 +952,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -990,12 +976,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1020,12 +1000,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1050,12 +1024,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1080,12 +1048,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1110,12 +1072,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1140,12 +1096,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1170,12 +1120,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
 
               localRig.crouchTime = 0;
     
@@ -1205,12 +1149,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
 
               localRig.crouchTime = 0;
     
@@ -1240,12 +1178,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
 
               localRig.crouchTime = 0;
     
@@ -1275,12 +1207,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffset, localRig.height, 0);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.crouchTime = 0;
 
@@ -1310,12 +1236,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.crouchTime = 0;
 
@@ -1348,12 +1268,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
 
               localRig.narutoRunState = true;
               localRig.narutoRunTime = narutoRunTime;
@@ -1395,12 +1309,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(0, localRig.height, positionOffset);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
 
               localRig.jumpState = true;
               localRig.jumpTime = jumpTime;
@@ -1436,12 +1344,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(-positionOffsetDiff, localRig.height, positionOffsetDiff);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1467,12 +1369,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffsetDiff, localRig.height, positionOffsetDiff);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1498,12 +1394,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(-positionOffsetDiff, localRig.height, positionOffsetDiff);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1529,12 +1419,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffsetDiff, localRig.height, positionOffsetDiff);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.update(timestamp, timeDiffMs);
             },
@@ -1560,12 +1444,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(-positionOffsetDiff, localRig.height, positionOffsetDiff);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.crouchTime = 0;
 
@@ -1596,12 +1474,6 @@ export default () => {
               
               localRig.inputs.hmd.position.set(positionOffsetDiff, localRig.height, positionOffsetDiff);
               localRig.inputs.hmd.updateMatrixWorld();
-              
-              for (let h = 0; h < 2; h++) {
-                localRig.setHandEnabled(h, false);
-              }
-              localRig.setTopEnabled(false);
-              localRig.setBottomEnabled(false);
     
               localRig.crouchTime = 0;
 
