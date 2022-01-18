@@ -1494,7 +1494,8 @@ const _renderSpriteImages = skinnedVrm => {
     value: 1,
   });
   
-  skinnedVrm.scene.traverse(o => {
+  const skinnedModel = skinnedVrm.scene;
+  skinnedModel.traverse(o => {
     if (o.isMesh) {
       o.frustumCulled = false;
     }
@@ -1502,7 +1503,7 @@ const _renderSpriteImages = skinnedVrm => {
 
   const skeleton = (() => {
     let skeleton = null;
-    skinnedVrm.scene.traverse(o => {
+    skinnedModel.traverse(o => {
       if (skeleton === null && o.isSkinnedMesh) {
         skeleton = o.skeleton;
       }
@@ -1514,8 +1515,8 @@ const _renderSpriteImages = skinnedVrm => {
   const {renderer} = useInternals();
   const pixelRatio = renderer.getPixelRatio();
   const _renderSpriteFrame = () => {
-    const oldParent = skinnedVrm.scene.parent;
-    scene2.add(skinnedVrm.scene);
+    const oldParent = skinnedModel.parent;
+    scene2.add(skinnedModel);
 
     const rendererSize = renderer.getSize(localVector2D);
     if (rendererSize.x >= texSize && rendererSize.y >= texSize) {
@@ -1534,9 +1535,9 @@ const _renderSpriteImages = skinnedVrm => {
     }
 
     if (oldParent) {
-      oldParent.add(skinnedVrm.scene);
+      oldParent.add(skinnedModel);
     } else {
-      skinnedVrm.scene.parent.remove(skinnedVrm.scene);
+      skinnedModel.parent.remove(skinnedModel);
     }
   };
 
@@ -1645,11 +1646,16 @@ const _renderSpriteImages = skinnedVrm => {
 
   return spriteImages;
 };
+function createSpriteMegaMesh(skinnedVrm) {
+  const spriteImages = _renderSpriteImages(skinnedVrm);
+  const spriteMegaAvatarMesh = new SpriteMegaAvatarMesh(spriteImages);
+  return spriteMegaAvatarMesh;
+}
 
 export default () => {
   const app = useApp();
   const localPlayer = useLocalPlayer();
-  const {renderer, scene, camera} = useInternals();
+  const {scene, camera} = useInternals();
 
   const cameraGeometry = new CameraGeometry();
   const cameraMaterial = new THREE.MeshBasicMaterial({
@@ -1672,9 +1678,8 @@ export default () => {
     
     scene.add(app2);
 
-    const spriteImages = _renderSpriteImages(app2.skinnedVrm);
-    spriteMegaAvatarMesh = new SpriteMegaAvatarMesh(spriteImages);
-    spriteMegaAvatarMesh.updateMatrixWorld();
+    spriteMegaAvatarMesh = createSpriteMegaMesh(app2.skinnedVrm);
+    // spriteMegaAvatarMesh.updateMatrixWorld();
     scene.add(spriteMegaAvatarMesh);
     localPlayer.avatar.model.visible = false;
   })();
