@@ -895,7 +895,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -926,7 +925,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -957,7 +955,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
               camera2.updateMatrixWorld();
               
@@ -988,7 +985,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
               camera2.updateMatrixWorld();
               
@@ -1019,7 +1015,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1050,7 +1045,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1081,7 +1075,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
               camera2.updateMatrixWorld();
               
@@ -1112,7 +1105,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
               camera2.updateMatrixWorld();
               
@@ -1143,7 +1135,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1174,7 +1165,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1210,7 +1200,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1246,7 +1235,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
               camera2.updateMatrixWorld();
               
@@ -1282,7 +1270,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(positionOffset, localRig.height*cameraHeightFactor, 0)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffset, localRig.height*cameraHeightFactor, 0));
               camera2.updateMatrixWorld();
               
@@ -1318,7 +1305,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1357,7 +1343,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1405,7 +1390,6 @@ export default () => {
               const euler = new THREE.Euler(0, angle, 0, 'YXZ');
               camera2.position.set(0, localRig.height*cameraHeightFactor, positionOffset)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(0, localRig.height*cameraHeightFactor, positionOffset));
               camera2.updateMatrixWorld();
               
@@ -1447,7 +1431,6 @@ export default () => {
               const positionOffsetDiff = positionOffset/Math.SQRT2;
               camera2.position.set(-positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(-positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff));
               camera2.updateMatrixWorld();
               
@@ -1479,7 +1462,6 @@ export default () => {
               const positionOffsetDiff = positionOffset/Math.SQRT2;
               camera2.position.set(positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff));
               camera2.updateMatrixWorld();
               
@@ -1511,7 +1493,6 @@ export default () => {
               const positionOffsetDiff = positionOffset/Math.SQRT2;
               camera2.position.set(-positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(-positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff));
               camera2.updateMatrixWorld();
               
@@ -1543,7 +1524,6 @@ export default () => {
               const positionOffsetDiff = positionOffset/Math.SQRT2;
               camera2.position.set(positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff));
               camera2.updateMatrixWorld();
               
@@ -1575,7 +1555,6 @@ export default () => {
               const positionOffsetDiff = positionOffset/Math.SQRT2;
               camera2.position.set(-positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(-positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff));
               camera2.updateMatrixWorld();
               
@@ -1612,7 +1591,6 @@ export default () => {
               const positionOffsetDiff = positionOffset/Math.SQRT2;
               camera2.position.set(positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff)
                 .add(new THREE.Vector3(0, 0, -distance).applyEuler(euler));
-              camera2.updateMatrixWorld();
               camera2.lookAt(new THREE.Vector3(positionOffsetDiff, localRig.height*cameraHeightFactor, positionOffsetDiff));
               camera2.updateMatrixWorld();
               
