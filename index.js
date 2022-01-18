@@ -1393,7 +1393,7 @@ export default () => {
           // localPlayer.characterPhysics.velocity.y += 6;
 
           let jumpTime = -200;
-          const jumpSpeed = 250;
+          const jumpIncrementSpeed = 250;
 
           return {
             update(timestamp, timeDiff) {
@@ -1421,9 +1421,9 @@ export default () => {
               localRig.jumpState = true;
               localRig.jumpTime = jumpTime;
 
-              jumpTime += timeDiffMs * jumpSpeed;
+              jumpTime += timeDiffMs * jumpIncrementSpeed;
               
-              // console.log('got jump time', jumpTime, timeDiffMs, jumpSpeed);
+              // console.log('got jump time', jumpTime, timeDiffMs, jumpIncrementSpeed);
     
               localRig.update(timestamp, timeDiffMs);
             },
