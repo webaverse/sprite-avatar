@@ -1644,53 +1644,52 @@ export default () => {
   })();
 
   useFrame(({timestamp, timeDiff}) => {
-    /* if (tex) {
-      tex.needsUpdate = true;
-    } */
-    for (const planeSpriteMesh of planeSpriteMeshes) {
-      const {duration} = planeSpriteMesh.spriteSpec;
-      const uTime = (timestamp/1000 % duration) / duration;
-      [planeSpriteMesh.material, planeSpriteMesh.customPostMaterial].forEach(material => {
-        if (material?.uniforms) {
-          material.uniforms.uTime.value = uTime;
-          material.uniforms.uTime.needsUpdate = true;
-        }
-      });
-    }
-
-    for (const spriteAvatarMesh of spriteAvatarMeshes) {
-      const {duration} = spriteAvatarMesh.spriteSpec;
-      const uTime = (timestamp/1000 % duration) / duration;
-
-      {
-        localQuaternion
-          .setFromRotationMatrix(
-            localMatrix.lookAt(
-              spriteAvatarMesh.getWorldPosition(localVector),
-              camera.position,
-              localVector2.set(0, 1, 0)
-            )
-          )
-          .premultiply(app.quaternion.clone().invert());
-        localEuler.setFromQuaternion(localQuaternion, 'YXZ');
-        localEuler.x = 0;
-        localEuler.z = 0;
-        spriteAvatarMesh.quaternion.setFromEuler(localEuler);
-        spriteAvatarMesh.updateMatrixWorld();
+    if (preview) {
+      for (const planeSpriteMesh of planeSpriteMeshes) {
+        const {duration} = planeSpriteMesh.spriteSpec;
+        const uTime = (timestamp/1000 % duration) / duration;
+        [planeSpriteMesh.material, planeSpriteMesh.customPostMaterial].forEach(material => {
+          if (material?.uniforms) {
+            material.uniforms.uTime.value = uTime;
+            material.uniforms.uTime.needsUpdate = true;
+          }
+        });
       }
 
-      [
-        spriteAvatarMesh.material,
-        spriteAvatarMesh.customPostMaterial,
-      ].forEach(material => {
-        if (material?.uniforms) {
-          material.uniforms.uTime.value = uTime;
-          material.uniforms.uTime.needsUpdate = true;
+      for (const spriteAvatarMesh of spriteAvatarMeshes) {
+        const {duration} = spriteAvatarMesh.spriteSpec;
+        const uTime = (timestamp/1000 % duration) / duration;
 
-          material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
-          material.uniforms.uY.needsUpdate = true;
+        {
+          localQuaternion
+            .setFromRotationMatrix(
+              localMatrix.lookAt(
+                spriteAvatarMesh.getWorldPosition(localVector),
+                camera.position,
+                localVector2.set(0, 1, 0)
+              )
+            )
+            .premultiply(app.quaternion.clone().invert());
+          localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+          localEuler.x = 0;
+          localEuler.z = 0;
+          spriteAvatarMesh.quaternion.setFromEuler(localEuler);
+          spriteAvatarMesh.updateMatrixWorld();
         }
-      });
+
+        [
+          spriteAvatarMesh.material,
+          spriteAvatarMesh.customPostMaterial,
+        ].forEach(material => {
+          if (material?.uniforms) {
+            material.uniforms.uTime.value = uTime;
+            material.uniforms.uTime.needsUpdate = true;
+
+            material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+            material.uniforms.uY.needsUpdate = true;
+          }
+        });
+      }
     }
     if (spriteMegaAvatarMesh) {
       // matrix transform
