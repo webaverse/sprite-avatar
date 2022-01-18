@@ -491,6 +491,54 @@ class SpriteMegaAvatarMesh extends THREE.Mesh {
     player: localPlayer,
     camera,
   }) {
+    if (preview) {
+      for (const planeSpriteMesh of planeSpriteMeshes) {
+        const {duration} = planeSpriteMesh.spriteSpec;
+        const uTime = (timestamp/1000 % duration) / duration;
+        [planeSpriteMesh.material, planeSpriteMesh.customPostMaterial].forEach(material => {
+          if (material?.uniforms) {
+            material.uniforms.uTime.value = uTime;
+            material.uniforms.uTime.needsUpdate = true;
+          }
+        });
+      }
+
+      for (const spriteAvatarMesh of spriteAvatarMeshes) {
+        const {duration} = spriteAvatarMesh.spriteSpec;
+        const uTime = (timestamp/1000 % duration) / duration;
+
+        {
+          localQuaternion
+            .setFromRotationMatrix(
+              localMatrix.lookAt(
+                spriteAvatarMesh.getWorldPosition(localVector),
+                camera.position,
+                localVector2.set(0, 1, 0)
+              )
+            )
+            .premultiply(app.quaternion.clone().invert());
+          localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+          localEuler.x = 0;
+          localEuler.z = 0;
+          spriteAvatarMesh.quaternion.setFromEuler(localEuler);
+          spriteAvatarMesh.updateMatrixWorld();
+        }
+
+        [
+          spriteAvatarMesh.material,
+          spriteAvatarMesh.customPostMaterial,
+        ].forEach(material => {
+          if (material?.uniforms) {
+            material.uniforms.uTime.value = uTime;
+            material.uniforms.uTime.needsUpdate = true;
+
+            material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+            material.uniforms.uY.needsUpdate = true;
+          }
+        });
+      }
+    }
+
     // matrix transform
     this.position.copy(localPlayer.position);
     this.position.y -= localPlayer.avatar.height;
@@ -1553,7 +1601,7 @@ const _renderSpriteImages = skinnedVrm => {
 
   const {renderer} = useInternals();
   const pixelRatio = renderer.getPixelRatio();
-  const _render = () => {
+  const _renderSpriteFrame = () => {
     const oldParent = skinnedVrm.scene.parent;
     scene2.add(skinnedVrm.scene);
 
@@ -1623,7 +1671,7 @@ const _renderSpriteImages = skinnedVrm => {
         spriteGenerator.update(now, timeDiff);
         now += timeDiff;
 
-        _render();
+        _renderSpriteFrame();
 
         if (preview) {
           const positionOffset = localRig.inputs.hmd.position.z;
@@ -1722,53 +1770,6 @@ export default () => {
   })();
 
   useFrame(({timestamp, timeDiff}) => {
-    if (preview) {
-      for (const planeSpriteMesh of planeSpriteMeshes) {
-        const {duration} = planeSpriteMesh.spriteSpec;
-        const uTime = (timestamp/1000 % duration) / duration;
-        [planeSpriteMesh.material, planeSpriteMesh.customPostMaterial].forEach(material => {
-          if (material?.uniforms) {
-            material.uniforms.uTime.value = uTime;
-            material.uniforms.uTime.needsUpdate = true;
-          }
-        });
-      }
-
-      for (const spriteAvatarMesh of spriteAvatarMeshes) {
-        const {duration} = spriteAvatarMesh.spriteSpec;
-        const uTime = (timestamp/1000 % duration) / duration;
-
-        {
-          localQuaternion
-            .setFromRotationMatrix(
-              localMatrix.lookAt(
-                spriteAvatarMesh.getWorldPosition(localVector),
-                camera.position,
-                localVector2.set(0, 1, 0)
-              )
-            )
-            .premultiply(app.quaternion.clone().invert());
-          localEuler.setFromQuaternion(localQuaternion, 'YXZ');
-          localEuler.x = 0;
-          localEuler.z = 0;
-          spriteAvatarMesh.quaternion.setFromEuler(localEuler);
-          spriteAvatarMesh.updateMatrixWorld();
-        }
-
-        [
-          spriteAvatarMesh.material,
-          spriteAvatarMesh.customPostMaterial,
-        ].forEach(material => {
-          if (material?.uniforms) {
-            material.uniforms.uTime.value = uTime;
-            material.uniforms.uTime.needsUpdate = true;
-
-            material.uniforms.uY.value = mod(localEuler.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
-            material.uniforms.uY.needsUpdate = true;
-          }
-        });
-      }
-    }
     spriteMegaAvatarMesh && spriteMegaAvatarMesh.update(timestamp, timeDiff, {
       player: localPlayer,
       camera,
