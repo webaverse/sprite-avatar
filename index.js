@@ -66,6 +66,8 @@ const spriteFootFactor = 0.07; // offset down this factor in world space
 // opacity factor for sprites
 const alphaTest = 0.9;
 
+const planeSpriteMeshes = [];
+const spriteAvatarMeshes = [];
 class SpritePlaneMesh extends THREE.Mesh {
   constructor(tex, {angleIndex}) {
     const planeSpriteMaterial = new WebaverseShaderMaterial({
@@ -1749,8 +1751,6 @@ export default () => {
   );
   scene.add(cameraMesh);
   
-  const planeSpriteMeshes = [];
-  const spriteAvatarMeshes = [];
   let spriteMegaAvatarMesh = null;
   (async () => {
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
