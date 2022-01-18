@@ -585,288 +585,291 @@ export default () => {
       planeSpriteMesh.customPostMaterial = normalMaterial; */
       return planeSpriteMesh;
     };
-    const _makeSpriteAvatarMesh = tex => {
-      const avatarSpriteMaterial = new WebaverseShaderMaterial({
-        uniforms: {
-          uTex: {
-            type: 't',
-            value: tex,
-            // needsUpdate: true,
+    class SpriteAvatarMesh extends THREE.Mesh {
+      constructor(tex) {
+        const avatarSpriteMaterial = new WebaverseShaderMaterial({
+          uniforms: {
+            uTex: {
+              type: 't',
+              value: tex,
+              // needsUpdate: true,
+            },
+            uTime: {
+              type: 'f',
+              value: 0,
+              needsUpdate: true,
+            },
+            uY: {
+              type: 'f',
+              value: 0,
+              needsUpdate: true,
+            },
           },
-          uTime: {
-            type: 'f',
-            value: 0,
-            needsUpdate: true,
-          },
-          uY: {
-            type: 'f',
-            value: 0,
-            needsUpdate: true,
-          },
-        },
-        vertexShader: `\
-          precision highp float;
-          precision highp int;
+          vertexShader: `\
+            precision highp float;
+            precision highp int;
 
-          uniform vec4 uSelectRange;
+            uniform vec4 uSelectRange;
 
-          // attribute vec3 barycentric;
-          attribute float ao;
-          attribute float skyLight;
-          attribute float torchLight;
+            // attribute vec3 barycentric;
+            attribute float ao;
+            attribute float skyLight;
+            attribute float torchLight;
 
-          // varying vec3 vViewPosition;
-          varying vec2 vUv;
-          varying vec3 vBarycentric;
-          varying float vAo;
-          varying float vSkyLight;
-          varying float vTorchLight;
-          varying vec3 vSelectColor;
-          varying vec2 vWorldUv;
-          varying vec3 vPos;
-          varying vec3 vNormal;
+            // varying vec3 vViewPosition;
+            varying vec2 vUv;
+            varying vec3 vBarycentric;
+            varying float vAo;
+            varying float vSkyLight;
+            varying float vTorchLight;
+            varying vec3 vSelectColor;
+            varying vec2 vWorldUv;
+            varying vec3 vPos;
+            varying vec3 vNormal;
 
-          void main() {
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            gl_Position = projectionMatrix * mvPosition;
+            void main() {
+              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+              gl_Position = projectionMatrix * mvPosition;
 
-            // vViewPosition = -mvPosition.xyz;
-            vUv = uv;
-          }
-        `,
-        fragmentShader: `\
-          precision highp float;
-          precision highp int;
-
-          #define PI 3.1415926535897932384626433832795
-
-          // uniform float sunIntensity;
-          uniform sampler2D uTex;
-          // uniform vec3 uColor;
-          uniform float uTime;
-          uniform float uY;
-          // uniform vec3 sunDirection;
-          // uniform float distanceOffset;
-          float parallaxScale = 0.3;
-          float parallaxMinLayers = 50.;
-          float parallaxMaxLayers = 50.;
-
-          // varying vec3 vViewPosition;
-          varying vec2 vUv;
-          varying vec3 vBarycentric;
-          varying float vAo;
-          varying float vSkyLight;
-          varying float vTorchLight;
-          varying vec3 vSelectColor;
-          varying vec2 vWorldUv;
-          varying vec3 vPos;
-          varying vec3 vNormal;
-
-          float edgeFactor(vec2 uv) {
-            float divisor = 0.5;
-            float power = 0.5;
-            return min(
-              pow(abs(uv.x - round(uv.x/divisor)*divisor), power),
-              pow(abs(uv.y - round(uv.y/divisor)*divisor), power)
-            ) > 0.1 ? 0.0 : 1.0;
-            /* return 1. - pow(abs(uv.x - round(uv.x/divisor)*divisor), power) *
-              pow(abs(uv.y - round(uv.y/divisor)*divisor), power); */
-          }
-
-          vec3 getTriPlanarBlend(vec3 _wNorm){
-            // in wNorm is the world-space normal of the fragment
-            vec3 blending = abs( _wNorm );
-            // blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
-            // float b = (blending.x + blending.y + blending.z);
-            // blending /= vec3(b, b, b);
-            // return min(min(blending.x, blending.y), blending.z);
-            blending = normalize(blending);
-            return blending;
-          }
-
-          void main() {
-            float angleIndex = floor(uY * ${numAngles.toFixed(8)});
-            float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
-            float i = animationIndex + angleIndex * ${numFrames.toFixed(8)};
-            float x = mod(i, ${numSlots.toFixed(8)});
-            float y = (i - x) / ${numSlots.toFixed(8)};
-            
-            gl_FragColor = texture(
-              uTex,
-              vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
-                vec2(x, -y)/${numSlots.toFixed(8)} +
-                vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
-            );
-            // gl_FragColor.r = 1.;
-            // gl_FragColor.a = 1.;
-            if (gl_FragColor.a < ${alphaTest}) {
-              discard;
+              // vViewPosition = -mvPosition.xyz;
+              vUv = uv;
             }
-            gl_FragColor.a = 1.;
-          }
-        `,
-        transparent: true,
-        // depthWrite: false,
-        // polygonOffset: true,
-        // polygonOffsetFactor: -2,
-        // polygonOffsetUnits: 1,
-        // side: THREE.DoubleSide,
-      });
-      const spriteAvatarMesh = new THREE.Mesh(planeWarpedGeometry, avatarSpriteMaterial);
-      spriteAvatarMesh.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
-        tex,
-      });
-      return spriteAvatarMesh;
+          `,
+          fragmentShader: `\
+            precision highp float;
+            precision highp int;
+
+            #define PI 3.1415926535897932384626433832795
+
+            // uniform float sunIntensity;
+            uniform sampler2D uTex;
+            // uniform vec3 uColor;
+            uniform float uTime;
+            uniform float uY;
+            // uniform vec3 sunDirection;
+            // uniform float distanceOffset;
+            float parallaxScale = 0.3;
+            float parallaxMinLayers = 50.;
+            float parallaxMaxLayers = 50.;
+
+            // varying vec3 vViewPosition;
+            varying vec2 vUv;
+            varying vec3 vBarycentric;
+            varying float vAo;
+            varying float vSkyLight;
+            varying float vTorchLight;
+            varying vec3 vSelectColor;
+            varying vec2 vWorldUv;
+            varying vec3 vPos;
+            varying vec3 vNormal;
+
+            float edgeFactor(vec2 uv) {
+              float divisor = 0.5;
+              float power = 0.5;
+              return min(
+                pow(abs(uv.x - round(uv.x/divisor)*divisor), power),
+                pow(abs(uv.y - round(uv.y/divisor)*divisor), power)
+              ) > 0.1 ? 0.0 : 1.0;
+              /* return 1. - pow(abs(uv.x - round(uv.x/divisor)*divisor), power) *
+                pow(abs(uv.y - round(uv.y/divisor)*divisor), power); */
+            }
+
+            vec3 getTriPlanarBlend(vec3 _wNorm){
+              // in wNorm is the world-space normal of the fragment
+              vec3 blending = abs( _wNorm );
+              // blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
+              // float b = (blending.x + blending.y + blending.z);
+              // blending /= vec3(b, b, b);
+              // return min(min(blending.x, blending.y), blending.z);
+              blending = normalize(blending);
+              return blending;
+            }
+
+            void main() {
+              float angleIndex = floor(uY * ${numAngles.toFixed(8)});
+              float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
+              float i = animationIndex + angleIndex * ${numFrames.toFixed(8)};
+              float x = mod(i, ${numSlots.toFixed(8)});
+              float y = (i - x) / ${numSlots.toFixed(8)};
+              
+              gl_FragColor = texture(
+                uTex,
+                vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
+                  vec2(x, -y)/${numSlots.toFixed(8)} +
+                  vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
+              );
+              // gl_FragColor.r = 1.;
+              // gl_FragColor.a = 1.;
+              if (gl_FragColor.a < ${alphaTest}) {
+                discard;
+              }
+              gl_FragColor.a = 1.;
+            }
+          `,
+          transparent: true,
+          // depthWrite: false,
+          // polygonOffset: true,
+          // polygonOffsetFactor: -2,
+          // polygonOffsetUnits: 1,
+          // side: THREE.DoubleSide,
+        });
+        super(planeWarpedGeometry, avatarSpriteMaterial);
+        this.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
+          tex,
+        });
+        // return spriteAvatarMesh;
+      }
     };
-    const _makeSpriteMegaAvatarMesh = texs => {
-      const tex = texs[0];
-      const avatarMegaSpriteMaterial = new WebaverseShaderMaterial({
-        uniforms: {
-          uTex: {
-            type: 't',
-            value: tex,
-            needsUpdate: true,
+    class SpriteMegaAvatarMesh extends THREE.Mesh {
+      constructor(texs) {
+        const tex = texs[0];
+        const avatarMegaSpriteMaterial = new WebaverseShaderMaterial({
+          uniforms: {
+            uTex: {
+              type: 't',
+              value: tex,
+              needsUpdate: true,
+            },
+            uTime: {
+              type: 'f',
+              value: 0,
+              needsUpdate: true,
+            },
+            uY: {
+              type: 'f',
+              value: 0,
+              needsUpdate: true,
+            },
           },
-          uTime: {
-            type: 'f',
-            value: 0,
-            needsUpdate: true,
-          },
-          uY: {
-            type: 'f',
-            value: 0,
-            needsUpdate: true,
-          },
-        },
-        vertexShader: `\
-          precision highp float;
-          precision highp int;
+          vertexShader: `\
+            precision highp float;
+            precision highp int;
 
-          uniform vec4 uSelectRange;
+            uniform vec4 uSelectRange;
 
-          // attribute vec3 barycentric;
-          attribute float ao;
-          attribute float skyLight;
-          attribute float torchLight;
+            // attribute vec3 barycentric;
+            attribute float ao;
+            attribute float skyLight;
+            attribute float torchLight;
 
-          // varying vec3 vViewPosition;
-          varying vec2 vUv;
-          varying vec3 vBarycentric;
-          varying float vAo;
-          varying float vSkyLight;
-          varying float vTorchLight;
-          varying vec3 vSelectColor;
-          varying vec2 vWorldUv;
-          varying vec3 vPos;
-          varying vec3 vNormal;
+            // varying vec3 vViewPosition;
+            varying vec2 vUv;
+            varying vec3 vBarycentric;
+            varying float vAo;
+            varying float vSkyLight;
+            varying float vTorchLight;
+            varying vec3 vSelectColor;
+            varying vec2 vWorldUv;
+            varying vec3 vPos;
+            varying vec3 vNormal;
 
-          void main() {
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            gl_Position = projectionMatrix * mvPosition;
+            void main() {
+              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+              gl_Position = projectionMatrix * mvPosition;
 
-            // vViewPosition = -mvPosition.xyz;
-            vUv = uv;
-          }
-        `,
-        fragmentShader: `\
-          precision highp float;
-          precision highp int;
-
-          #define PI 3.1415926535897932384626433832795
-
-          // uniform float sunIntensity;
-          uniform sampler2D uTex;
-          // uniform vec3 uColor;
-          uniform float uTime;
-          uniform float uY;
-          // uniform vec3 sunDirection;
-          // uniform float distanceOffset;
-          float parallaxScale = 0.3;
-          float parallaxMinLayers = 50.;
-          float parallaxMaxLayers = 50.;
-
-          // varying vec3 vViewPosition;
-          varying vec2 vUv;
-          varying vec3 vBarycentric;
-          varying float vAo;
-          varying float vSkyLight;
-          varying float vTorchLight;
-          varying vec3 vSelectColor;
-          varying vec2 vWorldUv;
-          varying vec3 vPos;
-          varying vec3 vNormal;
-
-          float edgeFactor(vec2 uv) {
-            float divisor = 0.5;
-            float power = 0.5;
-            return min(
-              pow(abs(uv.x - round(uv.x/divisor)*divisor), power),
-              pow(abs(uv.y - round(uv.y/divisor)*divisor), power)
-            ) > 0.1 ? 0.0 : 1.0;
-            /* return 1. - pow(abs(uv.x - round(uv.x/divisor)*divisor), power) *
-              pow(abs(uv.y - round(uv.y/divisor)*divisor), power); */
-          }
-
-          vec3 getTriPlanarBlend(vec3 _wNorm){
-            // in wNorm is the world-space normal of the fragment
-            vec3 blending = abs( _wNorm );
-            // blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
-            // float b = (blending.x + blending.y + blending.z);
-            // blending /= vec3(b, b, b);
-            // return min(min(blending.x, blending.y), blending.z);
-            blending = normalize(blending);
-            return blending;
-          }
-
-          void main() {
-            float angleIndex = floor(uY * ${numAngles.toFixed(8)});
-            float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
-            float i = animationIndex + angleIndex * ${numFrames.toFixed(8)};
-            float x = mod(i, ${numSlots.toFixed(8)});
-            float y = (i - x) / ${numSlots.toFixed(8)};
-            
-            gl_FragColor = texture(
-              uTex,
-              vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
-                vec2(x, -y)/${numSlots.toFixed(8)} +
-                vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
-            );
-            // gl_FragColor.r = 1.;
-            // gl_FragColor.a = 1.;
-            if (gl_FragColor.a < ${alphaTest}) {
-              discard;
+              // vViewPosition = -mvPosition.xyz;
+              vUv = uv;
             }
-            gl_FragColor.a = 1.;
-          }
-        `,
-        transparent: true,
-        // depthWrite: false,
-        // polygonOffset: true,
-        // polygonOffsetFactor: -2,
-        // polygonOffsetUnits: 1,
-        // side: THREE.DoubleSide,
-      });
-      const spriteMegaAvatarMesh = new THREE.Mesh(planeWarpedGeometry2, avatarMegaSpriteMaterial);
-      spriteMegaAvatarMesh.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
-        tex,
-      });
-      spriteMegaAvatarMesh.setTexture = name => {
-        const tex = texs.find(t => t.name === name);
-        if (tex) {
-          avatarMegaSpriteMaterial.uniforms.uTex.value = tex;
-          avatarMegaSpriteMaterial.uniforms.uTex.needsUpdate = true;
+          `,
+          fragmentShader: `\
+            precision highp float;
+            precision highp int;
 
-          if (spriteMegaAvatarMesh.customPostMaterial.uniforms) {
-            spriteMegaAvatarMesh.customPostMaterial.uniforms.uTex.value = tex;
-            spriteMegaAvatarMesh.customPostMaterial.uniforms.uTex.needsUpdate = true;
+            #define PI 3.1415926535897932384626433832795
+
+            // uniform float sunIntensity;
+            uniform sampler2D uTex;
+            // uniform vec3 uColor;
+            uniform float uTime;
+            uniform float uY;
+            // uniform vec3 sunDirection;
+            // uniform float distanceOffset;
+            float parallaxScale = 0.3;
+            float parallaxMinLayers = 50.;
+            float parallaxMaxLayers = 50.;
+
+            // varying vec3 vViewPosition;
+            varying vec2 vUv;
+            varying vec3 vBarycentric;
+            varying float vAo;
+            varying float vSkyLight;
+            varying float vTorchLight;
+            varying vec3 vSelectColor;
+            varying vec2 vWorldUv;
+            varying vec3 vPos;
+            varying vec3 vNormal;
+
+            float edgeFactor(vec2 uv) {
+              float divisor = 0.5;
+              float power = 0.5;
+              return min(
+                pow(abs(uv.x - round(uv.x/divisor)*divisor), power),
+                pow(abs(uv.y - round(uv.y/divisor)*divisor), power)
+              ) > 0.1 ? 0.0 : 1.0;
+              /* return 1. - pow(abs(uv.x - round(uv.x/divisor)*divisor), power) *
+                pow(abs(uv.y - round(uv.y/divisor)*divisor), power); */
+            }
+
+            vec3 getTriPlanarBlend(vec3 _wNorm){
+              // in wNorm is the world-space normal of the fragment
+              vec3 blending = abs( _wNorm );
+              // blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
+              // float b = (blending.x + blending.y + blending.z);
+              // blending /= vec3(b, b, b);
+              // return min(min(blending.x, blending.y), blending.z);
+              blending = normalize(blending);
+              return blending;
+            }
+
+            void main() {
+              float angleIndex = floor(uY * ${numAngles.toFixed(8)});
+              float animationIndex = floor(uTime * ${numFrames.toFixed(8)});
+              float i = animationIndex + angleIndex * ${numFrames.toFixed(8)};
+              float x = mod(i, ${numSlots.toFixed(8)});
+              float y = (i - x) / ${numSlots.toFixed(8)};
+              
+              gl_FragColor = texture(
+                uTex,
+                vec2(0., 1. - 1./${numSlots.toFixed(8)}) +
+                  vec2(x, -y)/${numSlots.toFixed(8)} +
+                  vec2(1.-vUv.x, vUv.y)/${numSlots.toFixed(8)}
+              );
+              // gl_FragColor.r = 1.;
+              // gl_FragColor.a = 1.;
+              if (gl_FragColor.a < ${alphaTest}) {
+                discard;
+              }
+              gl_FragColor.a = 1.;
+            }
+          `,
+          transparent: true,
+          // depthWrite: false,
+          // polygonOffset: true,
+          // polygonOffsetFactor: -2,
+          // polygonOffsetUnits: 1,
+          // side: THREE.DoubleSide,
+        });
+        super(planeWarpedGeometry2, avatarMegaSpriteMaterial);
+        this.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
+          tex,
+        });
+        this.setTexture = name => {
+          const tex = texs.find(t => t.name === name);
+          if (tex) {
+            avatarMegaSpriteMaterial.uniforms.uTex.value = tex;
+            avatarMegaSpriteMaterial.uniforms.uTex.needsUpdate = true;
+
+            if (this.customPostMaterial.uniforms) {
+              this.customPostMaterial.uniforms.uTex.value = tex;
+              this.customPostMaterial.uniforms.uTex.needsUpdate = true;
+            }
+            
+            return true;
+          } else {
+            return false;
           }
-          
-          return true;
-        } else {
-          return false;
-        }
-      };
-      return spriteMegaAvatarMesh;
+        };
+      }
     };
 
     spriteSpecs = [
@@ -1616,7 +1619,7 @@ export default () => {
       }
 
       if (preview) {
-        const spriteAvatarMesh = _makeSpriteAvatarMesh(tex);
+        const spriteAvatarMesh = new SpriteAvatarMesh(tex);
         spriteAvatarMesh.position.set(
           -canvasIndex*worldSize,
           0,
@@ -1634,7 +1637,7 @@ export default () => {
     }
     // console.timeEnd('render');
 
-    spriteMegaAvatarMesh = _makeSpriteMegaAvatarMesh(spriteImages);
+    spriteMegaAvatarMesh = new SpriteMegaAvatarMesh(spriteImages);
     // spriteMegaAvatarMesh.position.set(0, worldSize/2 + (spriteScaleFactor - 1)*worldSize - spriteFootFactor*worldSize, 0);
     // spriteMegaAvatarMesh.scale.setScalar(spriteScaleFactor);
     // spriteMegaAvatarMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
