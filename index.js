@@ -1502,7 +1502,7 @@ export default () => {
       }, 'image/png');
     }); */
     const pixelRatio = renderer.getPixelRatio();
-    const _captureRender = () => createImageBitmap(canvas, 0, canvas.height - texSize, texSize, texSize);
+    const _captureRender = () => createImageBitmap(renderer.domElement, 0, renderer.domElement.height - texSize, texSize, texSize);
     const _render = () => {
       const oldParent = app2.parent;
       scene2.add(app2);
