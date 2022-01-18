@@ -4,11 +4,20 @@ import metaversefile from 'metaversefile';
 const {useApp, useFrame, useLocalPlayer, usePhysics, useMaterials, createAvatar, useAvatarAnimations, useInternals, useCleanup} = metaversefile;
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-// const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
+const preview = false; // whether to draw debug meshes
 
 const {WebaverseShaderMaterial} = useMaterials();
+const animations = useAvatarAnimations();
 
-const preview = false; // whether to draw debug meshes
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector2D = new THREE.Vector2();
+const localVector4D = new THREE.Vector4();
+const localQuaternion = new THREE.Quaternion();
+const localEuler = new THREE.Euler();
+const localEuler2 = new THREE.Euler();
+const localMatrix = new THREE.Matrix4();
 
 class DoubleSidedPlaneGeometry extends THREE.BufferGeometry {
   constructor(width, height, widthSegments, heightSegments) {
@@ -523,23 +532,8 @@ const _getPlayerSide = () => {
     return aDistance - bDistance;
   });
   const closest2AnimationAngle = animationAngles[0];
-  // console.log('got angle', angle, closest2AnimationAngle.name);
   return closest2AnimationAngle.name;
 };
-
-// console.log('sprite avatar index');
-
-const localVector = new THREE.Vector3();
-const localVector2 = new THREE.Vector3();
-const localVector3 = new THREE.Vector3();
-const localVector2D = new THREE.Vector2();
-const localVector4D = new THREE.Vector4();
-const localQuaternion = new THREE.Quaternion();
-const localEuler = new THREE.Euler();
-const localEuler2 = new THREE.Euler();
-const localMatrix = new THREE.Matrix4();
-
-// const y180Quaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 
 const planeGeometry = new DoubleSidedPlaneGeometry(worldSize, worldSize);
 const planeWarpedGeometry = planeGeometry.clone()
@@ -564,7 +558,6 @@ const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 2);
 directionalLight.position.set(1, 2, 3);
 scene2.add(directionalLight);
 
-const animations = useAvatarAnimations();
 const walkAnimation = animations.find(a => a.name === 'walking.fbx');
 const walkBackwardAnimation = animations.find(a => a.name === 'walking backwards.fbx');
 const runAnimation = animations.find(a => a.name === 'Fast Run.fbx');
@@ -1314,8 +1307,6 @@ class PlaneSpriteDepthMaterial extends THREE.MeshNormalMaterial {
         discard;
       }
     `);
-
-    // console.log('got normal map shader', parameters.vertexShader, parameters.fragmentShader);
   }
 }
 const _addAvatarSpriteMaterialUniforms = (uniforms, tex) => {
@@ -1380,8 +1371,6 @@ class AvatarSpriteDepthMaterial extends THREE.MeshNormalMaterial {
       }
      //  gl_FragColor.a = 1.;
     `);
-
-    // console.log('got normal map shader', parameters.vertexShader, parameters.fragmentShader);
   }
 }
 
@@ -1389,8 +1378,6 @@ export default () => {
   const app = useApp();
   const localPlayer = useLocalPlayer();
   const {renderer, scene, camera} = useInternals();
-
-  // window.animations = animations;
 
   const cameraGeometry = new CameraGeometry();
   const cameraMaterial = new THREE.MeshBasicMaterial({
@@ -1411,19 +1398,6 @@ export default () => {
     const m = await metaversefile.import(vrmUrl);
     const app2 = metaversefile.createApp();
     await app2.addModule(m);
-    
-    /* const renderer = new THREE.WebGLRenderer({
-      preserveDrawingBuffer: true,
-      antialias: true,
-      alpha: true,
-    });
-    renderer.setSize(texSize, texSize); */
-    
-    /* // renderer.autoClear = false;
-    renderer.sortObjects = false;
-    renderer.physicallyCorrectLights = true;
-    // renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.gammaFactor = 2.2; */
     
     await app2.setSkinning(true);
     
