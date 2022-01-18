@@ -469,22 +469,169 @@ class SpriteMegaAvatarMesh extends THREE.Mesh {
     this.customPostMaterial = new AvatarSpriteDepthMaterial(undefined, {
       tex,
     });
-    this.setTexture = name => {
-      const tex = texs.find(t => t.name === name);
-      if (tex) {
-        avatarMegaSpriteMaterial.uniforms.uTex.value = tex;
-        avatarMegaSpriteMaterial.uniforms.uTex.needsUpdate = true;
+    this.texs = texs;
+  }
+  setTexture(name) {
+    const tex = this.texs.find(t => t.name === name);
+    if (tex) {
+      this.material.uniforms.uTex.value = tex;
+      this.material.uniforms.uTex.needsUpdate = true;
 
-        if (this.customPostMaterial.uniforms) {
-          this.customPostMaterial.uniforms.uTex.value = tex;
-          this.customPostMaterial.uniforms.uTex.needsUpdate = true;
-        }
-        
-        return true;
-      } else {
-        return false;
+      if (this.customPostMaterial.uniforms) {
+        this.customPostMaterial.uniforms.uTex.value = tex;
+        this.customPostMaterial.uniforms.uTex.needsUpdate = true;
       }
-    };
+      
+      return true;
+    } else {
+      return false;
+    }
+  }
+  update(timestamp, timeDiff, {
+    player: localPlayer,
+    camera,
+  }) {
+    // matrix transform
+    this.position.copy(localPlayer.position);
+    this.position.y -= localPlayer.avatar.height;
+
+    localQuaternion
+      .setFromRotationMatrix(
+        localMatrix.lookAt(
+          this.getWorldPosition(localVector),
+          camera.position,
+          localVector2.set(0, 1, 0)
+        )
+      )
+    localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+    localEuler.x = 0;
+    localEuler.z = 0;
+
+    this.quaternion.setFromEuler(localEuler);
+    this.updateMatrixWorld();
+
+    // select the texture
+    const spriteSpecName = (() => {
+      const playerSide = _getPlayerSide();
+      const currentSpeed = localVector.set(localPlayer.characterPhysics.velocity.x, 0, localPlayer.characterPhysics.velocity.z)
+        .length();
+
+      if (localPlayer.avatar.jumpState) {
+        return 'jump';
+      } else if (localPlayer.avatar.narutoRunState) {
+        return 'naruto run';
+      } else if (localPlayer.avatar.crouchTime === 0) {
+        const crouchIdleSpeedDistance = currentSpeed;
+        const crouchSpeedDistance = Math.abs(crouchSpeed - currentSpeed);
+        const speedDistances = [
+          {
+            name: 'crouch idle',
+            distance: crouchIdleSpeedDistance,
+          },
+          {
+            name: 'crouch',
+            distance: crouchSpeedDistance,
+          },
+        ].sort((a, b) => a.distance - b.distance);
+        const closestSpeedDistance = speedDistances[0];
+        const spriteSpecBaseName = closestSpeedDistance.name;
+
+        if (spriteSpecBaseName === 'crouch idle') {
+          return 'crouch idle';
+        } else if (spriteSpecBaseName === 'crouch') {
+          if (playerSide === 'forward') {
+            return 'crouch walk';
+          } else if (playerSide === 'backward') {
+            return 'crouch walk backward';
+          } else if (playerSide === 'left') {
+            return 'crouch walk left';
+          } else if (playerSide === 'right') {
+            return 'crouch walk  right';
+          }
+        }
+      } else {
+        const currentSpeed = localVector.set(localPlayer.characterPhysics.velocity.x, 0, localPlayer.characterPhysics.velocity.z).length();
+        const idleSpeedDistance = currentSpeed;
+        const walkSpeedDistance = Math.abs(walkSpeed - currentSpeed);
+        const runSpeedDistance = Math.abs(runSpeed - currentSpeed);
+        const speedDistances = [
+          {
+            name: 'idle',
+            distance: idleSpeedDistance,
+          },
+          {
+            name: 'walk',
+            distance: walkSpeedDistance,
+          },
+          {
+            name: 'run',
+            distance: runSpeedDistance,
+          },
+        ].sort((a, b) => a.distance - b.distance);
+        const closestSpeedDistance = speedDistances[0];
+        const spriteSpecBaseName = closestSpeedDistance.name;
+        if (spriteSpecBaseName === 'idle') {
+          return 'idle';
+        } else if (spriteSpecBaseName === 'walk') {
+          if (playerSide === 'forward') {
+            return 'walk';
+          } else if (playerSide === 'backward') {
+            return 'walk backward';
+          } else if (playerSide === 'left') {
+            return 'walk left';
+          } else if (playerSide === 'right') {
+            return 'walk right';
+          }
+        } else if (spriteSpecBaseName === 'run') {
+          if (playerSide === 'forward') {
+            return 'run';
+          } else if (playerSide === 'backward') {
+            return 'run backward';
+          } else if (playerSide === 'left') {
+            return 'run left';
+          } else if (playerSide === 'right') {
+            return 'run right';
+          }
+        }
+
+        throw new Error('unhandled case');
+      }
+    })();
+    this.setTexture(spriteSpecName);
+
+    // general uniforms
+    [
+      this.material,
+      this.customPostMaterial,
+    ].forEach(material => {
+      if (material?.uniforms) {
+        const spriteSpec = spriteSpecs.find(s => s.name === spriteSpecName);
+        const {duration} = spriteSpec;
+        const uTime = (timestamp/1000 % duration) / duration;
+        
+        material.uniforms.uTime.value = uTime;
+        material.uniforms.uTime.needsUpdate = true;
+
+        localQuaternion
+          .setFromRotationMatrix(
+            localMatrix.lookAt(
+              this.getWorldPosition(localVector),
+              camera.position,
+              localVector2.set(0, 1, 0)
+            )
+          )
+        localEuler.setFromQuaternion(localQuaternion, 'YXZ');
+        localEuler.x = 0;
+        localEuler.z = 0;
+
+        localEuler2.setFromQuaternion(localPlayer.quaternion, 'YXZ');
+        localEuler2.x = 0;
+        localEuler2.z = 0;
+
+        material.uniforms.uY.value = mod(localEuler.y - localEuler2.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
+        material.uniforms.uY.needsUpdate = true;
+      }
+    });
   }
 }
 
@@ -1624,146 +1771,9 @@ export default () => {
       }
     }
     if (spriteMegaAvatarMesh) {
-      // matrix transform
-      spriteMegaAvatarMesh.position.copy(localPlayer.position);
-      spriteMegaAvatarMesh.position.y -= localRig.height;
-
-      localQuaternion
-        .setFromRotationMatrix(
-          localMatrix.lookAt(
-            spriteMegaAvatarMesh.getWorldPosition(localVector),
-            camera.position,
-            localVector2.set(0, 1, 0)
-          )
-        )
-      localEuler.setFromQuaternion(localQuaternion, 'YXZ');
-      localEuler.x = 0;
-      localEuler.z = 0;
-
-      spriteMegaAvatarMesh.quaternion.setFromEuler(localEuler);
-      spriteMegaAvatarMesh.updateMatrixWorld();
-
-      // select the texture
-      const spriteSpecName = (() => {
-        const playerSide = _getPlayerSide();
-        const currentSpeed = localVector.set(localPlayer.characterPhysics.velocity.x, 0, localPlayer.characterPhysics.velocity.z)
-          .length();
-
-        if (localPlayer.avatar.jumpState) {
-          return 'jump';
-        } else if (localPlayer.avatar.narutoRunState) {
-          return 'naruto run';
-        } else if (localPlayer.avatar.crouchTime === 0) {
-          const crouchIdleSpeedDistance = currentSpeed;
-          const crouchSpeedDistance = Math.abs(crouchSpeed - currentSpeed);
-          const speedDistances = [
-            {
-              name: 'crouch idle',
-              distance: crouchIdleSpeedDistance,
-            },
-            {
-              name: 'crouch',
-              distance: crouchSpeedDistance,
-            },
-          ].sort((a, b) => a.distance - b.distance);
-          const closestSpeedDistance = speedDistances[0];
-          const spriteSpecBaseName = closestSpeedDistance.name;
-
-          if (spriteSpecBaseName === 'crouch idle') {
-            return 'crouch idle';
-          } else if (spriteSpecBaseName === 'crouch') {
-            if (playerSide === 'forward') {
-              return 'crouch walk';
-            } else if (playerSide === 'backward') {
-              return 'crouch walk backward';
-            } else if (playerSide === 'left') {
-              return 'crouch walk left';
-            } else if (playerSide === 'right') {
-              return 'crouch walk  right';
-            }
-          }
-        } else {
-          const currentSpeed = localVector.set(localPlayer.characterPhysics.velocity.x, 0, localPlayer.characterPhysics.velocity.z).length();
-          const idleSpeedDistance = currentSpeed;
-          const walkSpeedDistance = Math.abs(walkSpeed - currentSpeed);
-          const runSpeedDistance = Math.abs(runSpeed - currentSpeed);
-          const speedDistances = [
-            {
-              name: 'idle',
-              distance: idleSpeedDistance,
-            },
-            {
-              name: 'walk',
-              distance: walkSpeedDistance,
-            },
-            {
-              name: 'run',
-              distance: runSpeedDistance,
-            },
-          ].sort((a, b) => a.distance - b.distance);
-          const closestSpeedDistance = speedDistances[0];
-          const spriteSpecBaseName = closestSpeedDistance.name;
-          if (spriteSpecBaseName === 'idle') {
-            return 'idle';
-          } else if (spriteSpecBaseName === 'walk') {
-            if (playerSide === 'forward') {
-              return 'walk';
-            } else if (playerSide === 'backward') {
-              return 'walk backward';
-            } else if (playerSide === 'left') {
-              return 'walk left';
-            } else if (playerSide === 'right') {
-              return 'walk right';
-            }
-          } else if (spriteSpecBaseName === 'run') {
-            if (playerSide === 'forward') {
-              return 'run';
-            } else if (playerSide === 'backward') {
-              return 'run backward';
-            } else if (playerSide === 'left') {
-              return 'run left';
-            } else if (playerSide === 'right') {
-              return 'run right';
-            }
-          }
-
-          throw new Error('unhandled case');
-        }
-      })();
-      spriteMegaAvatarMesh.setTexture(spriteSpecName);
-
-      // general uniforms
-      [
-        spriteMegaAvatarMesh?.material,
-        spriteMegaAvatarMesh?.customPostMaterial,
-      ].forEach(material => {
-        if (material?.uniforms) {
-          const spriteSpec = spriteSpecs.find(s => s.name === spriteSpecName);
-          const {duration} = spriteSpec;
-          const uTime = (timestamp/1000 % duration) / duration;
-          
-          material.uniforms.uTime.value = uTime;
-          material.uniforms.uTime.needsUpdate = true;
-
-          localQuaternion
-            .setFromRotationMatrix(
-              localMatrix.lookAt(
-                spriteMegaAvatarMesh.getWorldPosition(localVector),
-                camera.position,
-                localVector2.set(0, 1, 0)
-              )
-            )
-          localEuler.setFromQuaternion(localQuaternion, 'YXZ');
-          localEuler.x = 0;
-          localEuler.z = 0;
-
-          localEuler2.setFromQuaternion(localPlayer.quaternion, 'YXZ');
-          localEuler2.x = 0;
-          localEuler2.z = 0;
-
-          material.uniforms.uY.value = mod(localEuler.y - localEuler2.y + Math.PI*2/numAngles/2, Math.PI*2) / (Math.PI*2);
-          material.uniforms.uY.needsUpdate = true;
-        }
+      spriteMegaAvatarMesh.update(timestamp, timeDiff, {
+        player: localPlayer,
+        camera,
       });
     }
   });
