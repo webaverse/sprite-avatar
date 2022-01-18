@@ -1378,7 +1378,7 @@ export default () => {
           localRig.narutoRunState = false;
         },
       },
-      /* {
+      {
         name: 'jump',
         duration: jumpAnimation.duration,
         init({angle}) {
@@ -1428,7 +1428,7 @@ export default () => {
           };
         },
       },
-      {
+      /* {
         name: 'run backward left',
         duration: runBackwardAnimation.duration,
         init({angle}) {
@@ -1862,7 +1862,9 @@ export default () => {
         const currentSpeed = localVector.set(localPlayer.characterPhysics.velocity.x, 0, localPlayer.characterPhysics.velocity.z)
           .length();
 
-        if (localPlayer.avatar.narutoRunState) {
+        if (localPlayer.avatar.jumpState) {
+          return 'jump';
+        } else if (localPlayer.avatar.narutoRunState) {
           return 'naruto run';
         } else if (localPlayer.avatar.crouchTime === 0) {
           const crouchIdleSpeedDistance = currentSpeed;
