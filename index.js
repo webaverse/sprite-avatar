@@ -27,7 +27,6 @@ export default () => {
 
   useFrame(({timestamp, timeDiff}) => {
     spriteMegaAvatarMesh && spriteMegaAvatarMesh.update(timestamp, timeDiff, {
-      player: localPlayer,
       playerAvatar: localPlayer.avatar,
       camera,
     });
