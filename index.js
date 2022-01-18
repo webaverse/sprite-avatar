@@ -1517,6 +1517,175 @@ class AvatarSpriteDepthMaterial extends THREE.MeshNormalMaterial {
   }
 }
 
+const _renderSpriteImages = skinnedVrm => {
+  const localRig = createAvatar(skinnedVrm, {
+    fingers: true,
+    hair: true,
+    visemes: true,
+    debug: false,
+  });
+  for (let h = 0; h < 2; h++) {
+    localRig.setHandEnabled(h, false);
+  }
+  localRig.setTopEnabled(false);
+  localRig.setBottomEnabled(false);
+  localRig.emotes.push({
+    index: 2,
+    value: 1,
+  });
+  
+  skinnedVrm.scene.traverse(o => {
+    if (o.isMesh) {
+      o.frustumCulled = false;
+    }
+  });
+
+  const skeleton = (() => {
+    let skeleton = null;
+    skinnedVrm.scene.traverse(o => {
+      if (skeleton === null && o.isSkinnedMesh) {
+        skeleton = o.skeleton;
+      }
+    });
+    return skeleton;
+  })();
+  const rootBone = skeleton.bones.find(b => b.name === 'Root');
+
+  const {renderer} = useInternals();
+  const pixelRatio = renderer.getPixelRatio();
+  const _render = () => {
+    const oldParent = skinnedVrm.scene.parent;
+    scene2.add(skinnedVrm.scene);
+
+    const rendererSize = renderer.getSize(localVector2D);
+    if (rendererSize.x >= texSize && rendererSize.y >= texSize) {
+      // push old renderer state
+      const oldViewport = renderer.getViewport(localVector4D);
+      const oldClearAlpha = renderer.getClearAlpha();
+      
+      renderer.setViewport(0, 0, texSize/pixelRatio, texSize/pixelRatio);
+      renderer.setClearAlpha(0);
+      renderer.clear();
+      renderer.render(scene2, camera2);
+
+      // pop old renderer state
+      renderer.setViewport(oldViewport);
+      renderer.setClearAlpha(oldClearAlpha);
+    }
+
+    if (oldParent) {
+      oldParent.add(skinnedVrm.scene);
+    } else {
+      skinnedVrm.scene.parent.remove(skinnedVrm.scene);
+    }
+  };
+
+  let canvasIndex2 = 0;
+  const spriteImages = [];
+  // console.time('render');
+  for (const spriteSpec of spriteSpecs) {
+    const {name, duration} = spriteSpec;
+
+    // console.log('spritesheet', name);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    // canvas.style.cssText = `position: fixed; top: ${canvasIndex2*1024}px; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
+    const ctx = canvas.getContext('2d');
+    const tex = new THREE.Texture(canvas);
+    tex.name = name;
+    // tex.minFilter = THREE.NearestFilter;
+    // tex.magFilter = THREE.NearestFilter;
+    let canvasIndex = 0;
+    
+    // console.log('generate sprite', name);
+
+    const timeDiff = duration * 1000 / numFrames;
+    let angleIndex = 0;
+    for (let angle = 0; angle < Math.PI*2; angle += Math.PI*2/numAngles) {
+      // console.log('angle', angle/(Math.PI*2)*360);
+
+      const spriteGenerator = spriteSpec.init({
+        angle,
+        avatar: localRig,
+      });
+      // pre-run the animation one cycle first, to stabilize the hair physics
+      let now = 0;
+      const startAngleIndex = angleIndex;
+      for (let j = 0; j < numFrames; j++) {
+        spriteGenerator.update(now, timeDiff);
+        now += timeDiff;
+      }
+      const initialPositionOffset = localRig.inputs.hmd.position.z;
+      // now perform the real capture
+      for (let j = 0; j < numFrames; j++, angleIndex++) {
+        spriteGenerator.update(now, timeDiff);
+        now += timeDiff;
+
+        _render();
+
+        if (preview) {
+          const positionOffset = localRig.inputs.hmd.position.z;
+          rootBone.position.set(0, 0, positionOffset - initialPositionOffset);
+          rootBone.updateMatrixWorld();
+
+          cameraMesh.position.copy(camera2.position);
+          cameraMesh.position.z -= initialPositionOffset;
+          cameraMesh.quaternion.copy(camera2.quaternion);
+          cameraMesh.updateMatrixWorld();
+        }
+
+        const x = angleIndex % numSlots;
+        const y = (angleIndex - x) / numSlots;
+        ctx.drawImage(
+          renderer.domElement,
+          0, renderer.domElement.height - texSize, texSize, texSize,
+          x * texSize, y * texSize, texSize, texSize
+        );
+        tex.needsUpdate = true;
+
+        // await _timeout(50);
+      }
+
+      if (preview) {
+        const planeSpriteMesh = new SpritePlaneMesh(tex, {
+          angleIndex: startAngleIndex,
+        });
+        planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
+        planeSpriteMesh.updateMatrixWorld();
+        planeSpriteMesh.spriteSpec = spriteSpec;
+        app.add(planeSpriteMesh);
+        planeSpriteMeshes.push(planeSpriteMesh);
+      }
+
+      spriteGenerator.cleanup && spriteGenerator.cleanup();
+
+      canvasIndex++;
+    }
+
+    if (preview) {
+      const spriteAvatarMesh = new SpriteAvatarMesh(tex);
+      spriteAvatarMesh.position.set(
+        -canvasIndex*worldSize,
+        0,
+        -canvasIndex2*worldSize,
+      );
+      spriteAvatarMesh.updateMatrixWorld();
+      spriteAvatarMesh.spriteSpec = spriteSpec;
+      app.add(spriteAvatarMesh); 
+      spriteAvatarMeshes.push(spriteAvatarMesh);
+    }
+    
+    canvasIndex2++;
+
+    spriteImages.push(tex);
+  }
+  // console.timeEnd('render');
+
+  return spriteImages;
+};
+
 export default () => {
   const app = useApp();
   const localPlayer = useLocalPlayer();
@@ -1535,7 +1704,6 @@ export default () => {
   const planeSpriteMeshes = [];
   const spriteAvatarMeshes = [];
   let spriteMegaAvatarMesh = null;
-  let localRig = null;
   (async () => {
     const vrmUrl = `https://webaverse.github.io/app/public/avatars/Scillia_Drophunter_V19.vrm`;
     const m = await metaversefile.import(vrmUrl);
@@ -1544,174 +1712,9 @@ export default () => {
     
     await app2.setSkinning(true);
     
-    const {skinnedVrm} = app2;
-    // console.log('got app', skinnedVrm);
-    localRig = createAvatar(skinnedVrm, {
-      fingers: true,
-      hair: true,
-      visemes: true,
-      debug: false,
-    });
-    for (let h = 0; h < 2; h++) {
-      localRig.setHandEnabled(h, false);
-    }
-    localRig.setTopEnabled(false);
-    localRig.setBottomEnabled(false);
-    localRig.emotes.push({
-      index: 2,
-      value: 1,
-    });
-    
-    skinnedVrm.scene.traverse(o => {
-      if (o.isMesh) {
-        o.frustumCulled = false;
-      }
-    });
-    
     scene.add(app2);
 
-    const skeleton = (() => {
-      let skeleton = null;
-      app2.skinnedVrm.scene.traverse(o => {
-        if (skeleton === null && o.isSkinnedMesh) {
-          skeleton = o.skeleton;
-        }
-      });
-      return skeleton;
-    })();
-    const rootBone = skeleton.bones.find(b => b.name === 'Root');
-
-    const pixelRatio = renderer.getPixelRatio();
-    const _render = () => {
-      const oldParent = app2.parent;
-      scene2.add(app2);
-
-      const rendererSize = renderer.getSize(localVector2D);
-      if (rendererSize.x >= texSize && rendererSize.y >= texSize) {
-        // push old renderer state
-        const oldViewport = renderer.getViewport(localVector4D);
-        const oldClearAlpha = renderer.getClearAlpha();
-        
-        renderer.setViewport(0, 0, texSize/pixelRatio, texSize/pixelRatio);
-        renderer.setClearAlpha(0);
-        renderer.clear();
-        renderer.render(scene2, camera2);
-
-        // pop old renderer state
-        renderer.setViewport(oldViewport);
-        renderer.setClearAlpha(oldClearAlpha);
-      }
-
-      if (oldParent) {
-        oldParent.add(app2);
-      } else {
-        app2.parent.remove(app2);
-      }
-    };
-
-    let canvasIndex2 = 0;
-    const spriteImages = [];
-    // console.time('render');
-    for (const spriteSpec of spriteSpecs) {
-      const {name, duration} = spriteSpec;
-
-      // console.log('spritesheet', name);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      // canvas.style.cssText = `position: fixed; top: ${canvasIndex2*1024}px; left: 0; width: 1024px; height: 1024px; z-index: 10;`;
-      const ctx = canvas.getContext('2d');
-      const tex = new THREE.Texture(canvas);
-      tex.name = name;
-      // tex.minFilter = THREE.NearestFilter;
-      // tex.magFilter = THREE.NearestFilter;
-      let canvasIndex = 0;
-      
-      // console.log('generate sprite', name);
-
-      const timeDiff = duration * 1000 / numFrames;
-      let angleIndex = 0;
-      for (let angle = 0; angle < Math.PI*2; angle += Math.PI*2/numAngles) {
-        // console.log('angle', angle/(Math.PI*2)*360);
-
-        const spriteGenerator = spriteSpec.init({
-          angle,
-          avatar: localRig,
-        });
-        // pre-run the animation one cycle first, to stabilize the hair physics
-        let now = 0;
-        const startAngleIndex = angleIndex;
-        for (let j = 0; j < numFrames; j++) {
-          spriteGenerator.update(now, timeDiff);
-          now += timeDiff;
-        }
-        const initialPositionOffset = localRig.inputs.hmd.position.z;
-        // now perform the real capture
-        for (let j = 0; j < numFrames; j++, angleIndex++) {
-          spriteGenerator.update(now, timeDiff);
-          now += timeDiff;
-
-          _render();
-
-          if (preview) {
-            const positionOffset = localRig.inputs.hmd.position.z;
-            rootBone.position.set(0, 0, positionOffset - initialPositionOffset);
-            rootBone.updateMatrixWorld();
-
-            cameraMesh.position.copy(camera2.position);
-            cameraMesh.position.z -= initialPositionOffset;
-            cameraMesh.quaternion.copy(camera2.quaternion);
-            cameraMesh.updateMatrixWorld();
-          }
-
-          const x = angleIndex % numSlots;
-          const y = (angleIndex - x) / numSlots;
-          ctx.drawImage(
-            renderer.domElement,
-            0, renderer.domElement.height - texSize, texSize, texSize,
-            x * texSize, y * texSize, texSize, texSize
-          );
-          tex.needsUpdate = true;
-
-          // await _timeout(50);
-        }
-
-        if (preview) {
-          const planeSpriteMesh = new SpritePlaneMesh(tex, {
-            angleIndex: startAngleIndex,
-          });
-          planeSpriteMesh.position.set(-canvasIndex*worldSize, 2, -canvasIndex2*worldSize);
-          planeSpriteMesh.updateMatrixWorld();
-          planeSpriteMesh.spriteSpec = spriteSpec;
-          app.add(planeSpriteMesh);
-          planeSpriteMeshes.push(planeSpriteMesh);
-        }
-
-        spriteGenerator.cleanup && spriteGenerator.cleanup();
-
-        canvasIndex++;
-      }
-
-      if (preview) {
-        const spriteAvatarMesh = new SpriteAvatarMesh(tex);
-        spriteAvatarMesh.position.set(
-          -canvasIndex*worldSize,
-          0,
-          -canvasIndex2*worldSize,
-        );
-        spriteAvatarMesh.updateMatrixWorld();
-        spriteAvatarMesh.spriteSpec = spriteSpec;
-        app.add(spriteAvatarMesh); 
-        spriteAvatarMeshes.push(spriteAvatarMesh);
-      }
-      
-      canvasIndex2++;
-
-      spriteImages.push(tex);
-    }
-    // console.timeEnd('render');
-
+    const spriteImages = _renderSpriteImages(app2.skinnedVrm);
     spriteMegaAvatarMesh = new SpriteMegaAvatarMesh(spriteImages);
     spriteMegaAvatarMesh.updateMatrixWorld();
     scene.add(spriteMegaAvatarMesh);
